@@ -40,6 +40,10 @@ python-levenshtein==0.25.1
 # Google Gemini API
 google-generativeai>=0.8.0
 
+# PyTorch CPU-only (MUST be installed before sentence-transformers to avoid CUDA download)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.1.0+cpu
+
 # Vector embeddings and semantic matching
 sentence-transformers>=2.2.0
 spacy>=3.7.0

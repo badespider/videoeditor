@@ -1,7 +1,10 @@
+# Optimized Dockerfile for Railway deployment
+# Uses CPU-only PyTorch to avoid massive CUDA downloads
+
 FROM python:3.11-slim
 
 # Install system dependencies for video processing and ML libraries
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libsm6 \
     libxext6 \
@@ -13,21 +16,29 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy requirements first for better caching
+# Copy requirements first for better Docker layer caching
 COPY requirements.txt .
+
+# Install PyTorch CPU-only FIRST (before other packages pull in CUDA version)
+# This significantly reduces build time and image size
+RUN pip install --no-cache-dir torch==2.1.0+cpu --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Install remaining Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download spaCy language model for visual grounding
+# Download spaCy model
 RUN python -m spacy download en_core_web_sm
 
 # Copy application code
-COPY . .
+COPY app ./app
+COPY scripts ./scripts
+COPY railway.toml .
+COPY list_models.py .
 
-# Create temp directories
+# Create temp directories for video processing
 RUN mkdir -p /app/temp/scenes /app/temp/audio /app/temp/frames
 
 EXPOSE 8000
 
-# Railway (and many PaaS providers) inject a dynamic $PORT. Fall back to 8000 for local/dev.
+# Use shell form to expand $PORT environment variable (Railway sets this)
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
-
