@@ -1,0 +1,5 @@
+# Hard constraints to prevent pip from upgrading torch to CUDA builds on Railway.
+# We want CPU-only wheels to keep image size + build times reasonable.
+torch==2.1.0+cpu
+
+
