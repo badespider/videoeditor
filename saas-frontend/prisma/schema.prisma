@@ -1,0 +1,164 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+model Account {
+  id                String   @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now()) @map(name: "created_at")
+  updatedAt         DateTime @default(now()) @map(name: "updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map(name: "accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map(name: "sessions")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now()) @map(name: "created_at")
+  updatedAt     DateTime  @default(now()) @map(name: "updated_at")
+  role          UserRole  @default(USER)
+
+  accounts     Account[]
+  sessions     Session[]
+  videoJobs    VideoJob[]
+  usageRecords UsageRecord[]
+  topUpCredits TopUpCredit[]
+
+  stripeCustomerId       String?   @unique @map(name: "stripe_customer_id")
+  stripeSubscriptionId   String?   @unique @map(name: "stripe_subscription_id")
+  stripePriceId          String?   @map(name: "stripe_price_id")
+  stripeCurrentPeriodEnd DateTime? @map(name: "stripe_current_period_end")
+
+  @@map(name: "users")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map(name: "verification_tokens")
+}
+
+// Video Processing Jobs
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model VideoJob {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Job configuration
+  title           String?
+  sourceVideoUrl  String?   @map(name: "source_video_url")
+  
+  // Backend job reference
+  backendJobId    String?   @unique @map(name: "backend_job_id")
+  
+  // Status tracking
+  status          JobStatus @default(PENDING)
+  progress        Int       @default(0)
+  currentStep     String?   @map(name: "current_step")
+  errorMessage    String?   @map(name: "error_message")
+  
+  // Output
+  outputVideoUrl  String?   @map(name: "output_video_url")
+  
+  // Processing stats
+  durationSeconds Int?      @map(name: "duration_seconds")
+  
+  // Timestamps
+  createdAt       DateTime  @default(now()) @map(name: "created_at")
+  updatedAt       DateTime  @updatedAt @map(name: "updated_at")
+  completedAt     DateTime? @map(name: "completed_at")
+  
+  @@index([userId])
+  @@index([status])
+  @@map(name: "video_jobs")
+}
+
+// Usage tracking for billing
+model UsageRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Usage details
+  videoJobId      String?  @map(name: "video_job_id")
+  minutesUsed     Float    @map(name: "minutes_used")
+  
+  // Billing period
+  billingPeriod   String   @map(name: "billing_period") // Format: YYYY-MM
+  
+  createdAt       DateTime @default(now()) @map(name: "created_at")
+  
+  @@index([userId, billingPeriod])
+  @@map(name: "usage_records")
+}
+
+// Rollover credits for one-time top-ups (persist across months)
+model TopUpCredit {
+  id                 String   @id @default(cuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  minutesPurchased   Int      @map(name: "minutes_purchased")
+  minutesRemaining   Int      @map(name: "minutes_remaining")
+
+  // Stripe identifiers to keep crediting idempotent
+  stripeCheckoutSessionId String? @unique @map(name: "stripe_checkout_session_id")
+
+  createdAt          DateTime @default(now()) @map(name: "created_at")
+  updatedAt          DateTime @updatedAt @map(name: "updated_at")
+
+  @@index([userId])
+  @@map(name: "top_up_credits")
+}

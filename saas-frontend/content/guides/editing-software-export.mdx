@@ -1,0 +1,257 @@
+---
+title: Exporting to Your Video Editor
+description: How to use Video Recap AI output in Premiere Pro, DaVinci Resolve, CapCut, and other editors.
+date: 2024-12-01
+---
+
+Video Recap AI generates script, voiceover, and clip map. This guide shows how to use that output in popular video editors.
+
+## What You're Working With
+
+After processing, you have:
+
+1. **Script** — Text file with structured narration
+2. **Voiceover** — Audio file (MP3 or WAV)
+3. **Clip Map** — Timestamps (CSV or table) mapping script to source video
+
+Your job: assemble these in your editor.
+
+---
+
+## Adobe Premiere Pro
+
+### Setup
+
+1. Create a new project
+2. Import your source video
+3. Import the voiceover audio
+4. Open the clip map for reference
+
+### Workflow
+
+1. **Place voiceover on audio track**
+   - Drag voiceover to A1
+   - This is your timeline backbone
+
+2. **Mark script segments**
+   - Use markers (M key) to note where each script segment starts
+   - Label markers: "Intro", "Act 1", etc.
+
+3. **Cut source video**
+   - Open source video in Source Monitor
+   - Use clip map timestamps to set In (I) and Out (O) points
+   - Insert clips to timeline (,) or overwrite (.)
+
+4. **Align clips to voiceover**
+   - Match video cuts to narration timing
+   - Use Slip tool (Y) to adjust clip content without moving position
+
+5. **Add transitions and graphics**
+   - Cross dissolves between scenes
+   - Text overlays for context
+   - Your intro/outro graphics
+
+### Tips
+
+- Use Pancake Timeline (stacked sequences) for complex edits
+- Create a project template with audio tracks pre-configured
+- Use Essential Graphics for reusable text templates
+
+---
+
+## DaVinci Resolve
+
+### Setup
+
+1. Create a new project
+2. Import media to Media Pool
+3. Create a timeline
+
+### Workflow
+
+1. **Add voiceover**
+   - Drag voiceover to Audio 1
+   - Enable waveform display for visual reference
+
+2. **Use clip map**
+   - Open clip map in a text editor or spreadsheet
+   - Note timestamps for each segment
+
+3. **Cut source video**
+   - In Cut page: use Source Tape mode to scrub source
+   - Set In/Out points and add to timeline
+   - Or use Edit page for more control
+
+4. **Sync to voiceover**
+   - Align video clips to narration
+   - Use Trim Edit mode (T) for precise adjustments
+
+5. **Color and effects**
+   - Apply color grade in Color page
+   - Add transitions in Edit page
+
+### Tips
+
+- Use Power Bins for frequently used assets
+- Create a template project with your standard setup
+- Use Smart Bins to organize clips by metadata
+
+---
+
+## CapCut (Desktop)
+
+### Setup
+
+1. Create a new project
+2. Import source video and voiceover
+3. Have clip map open for reference
+
+### Workflow
+
+1. **Add voiceover**
+   - Drag to audio track
+   - This sets your timing
+
+2. **Split and arrange source video**
+   - Add source video to video track
+   - Use Split (Ctrl/Cmd+B) at clip map timestamps
+   - Delete unwanted sections
+
+3. **Reorder clips**
+   - Drag clips to match script segment order
+   - Align with voiceover timing
+
+4. **Add effects**
+   - Apply transitions between clips
+   - Add text overlays
+   - Use CapCut's auto-captions if needed
+
+### Tips
+
+- Use keyboard shortcuts for faster editing
+- Save custom presets for effects you use often
+- Export at 1080p for YouTube, vertical for TikTok/Reels
+
+---
+
+## CapCut (Mobile)
+
+### Workflow
+
+1. Import source video and voiceover to your phone
+2. Create new project in CapCut
+3. Add voiceover as audio track
+4. Split source video at key timestamps
+5. Rearrange clips to match narration
+6. Add text, transitions, effects
+7. Export and upload
+
+### Tips
+
+- Use the "Extract Audio" feature if you need to separate tracks
+- Save templates for consistent style
+- Export in highest quality your phone supports
+
+---
+
+## Final Cut Pro
+
+### Setup
+
+1. Create a new library and project
+2. Import source video and voiceover
+3. Set project settings to match source
+
+### Workflow
+
+1. **Add voiceover to timeline**
+   - Drag to audio lane
+   - Use audio waveform for visual timing
+
+2. **Use clip map**
+   - Reference timestamps as you work
+   - Use Range tool (R) to select portions of source
+
+3. **Add clips**
+   - Set In (I) and Out (O) in source
+   - Append (E) or Insert (W) to timeline
+
+4. **Adjust timing**
+   - Use Trim tool (T) to adjust edits
+   - Slip clips to change content without moving position
+
+5. **Finish**
+   - Add transitions (Cmd+T for default)
+   - Apply color correction
+   - Add titles and graphics
+
+### Tips
+
+- Use Compound Clips to group related clips
+- Create Motion templates for reusable graphics
+- Use Roles for organized audio management
+
+---
+
+## General Tips (All Editors)
+
+### Organize Your Project
+
+```
+Project Folder/
+  Source/
+    episode.mp4
+  Audio/
+    voiceover.mp3
+  Assets/
+    intro.mp4
+    outro.mp4
+    graphics/
+  Exports/
+```
+
+### Use the Clip Map Efficiently
+
+Print it or keep it on a second monitor. Check off segments as you complete them.
+
+### Save Incrementally
+
+Save versions as you work:
+- `project_v1.prproj`
+- `project_v2.prproj`
+- `project_final.prproj`
+
+### Export Settings
+
+For YouTube:
+- H.264 codec
+- 1080p or 4K
+- 15-30 Mbps bitrate
+- AAC audio at 320 kbps
+
+For TikTok/Reels:
+- 9:16 vertical
+- 1080x1920
+- Under 3 minutes
+
+---
+
+## Troubleshooting
+
+**Audio out of sync**
+- Check source video frame rate matches project
+- Re-import voiceover if needed
+
+**Clips don't match timestamps**
+- Verify you're using the correct source file
+- Check if source has been trimmed
+
+**Export quality is poor**
+- Increase bitrate
+- Use a higher quality codec
+- Check export resolution matches source
+
+---
+
+That's it! With Video Recap AI handling script, voiceover, and clip mapping, your editing time drops significantly. Focus on polish and personality—the hard work is done.
+

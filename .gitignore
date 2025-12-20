@@ -1,0 +1,39 @@
+# Dependencies
+**/node_modules/
+
+# Next.js / React tooling
+**/.next/
+**/out/
+**/.contentlayer/
+**/.turbo/
+**/.vercel/
+
+# Build outputs
+**/dist/
+**/build/
+**/coverage/
+
+# Local env / secrets
+.env
+.env.*
+!.env.example
+
+# Python caches / virtualenvs
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.venv/
+**/venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+**/.idea/
+**/.vscode/
+
+# Logs
+**/*.log
+
+
