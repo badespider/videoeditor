@@ -28,5 +28,6 @@ RUN mkdir -p /app/temp/scenes /app/temp/audio /app/temp/frames
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Railway (and many PaaS providers) inject a dynamic $PORT. Fall back to 8000 for local/dev.
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
 
