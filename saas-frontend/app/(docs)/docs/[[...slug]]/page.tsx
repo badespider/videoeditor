@@ -4,7 +4,6 @@ import { allDocs } from "contentlayer/generated";
 import { getTableOfContents } from "@/lib/toc";
 import { Mdx } from "@/components/content/mdx-components";
 import { DocsPageHeader } from "@/components/docs/page-header";
-import { DocsPager } from "@/components/docs/pager";
 import { DashboardTableOfContents } from "@/components/shared/toc";
 
 import "@/styles/mdx.css";
@@ -76,8 +75,7 @@ export default async function DocPage({ params }: DocPageProps) {
         <div className="pb-4 pt-11">
           <Mdx code={doc.body.code} images={images} />
         </div>
-        <hr className="my-4 md:my-6" />
-        <DocsPager doc={doc} />
+        {/* Pager temporarily removed (component was removed during deploy fixes) */}
       </div>
       <div className="hidden text-sm xl:block">
         <div className="sticky top-16 -mt-10 max-h-[calc(var(--vh)-4rem)] overflow-y-auto pt-8">
