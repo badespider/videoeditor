@@ -315,7 +315,9 @@ class Settings(BaseSettings):
             if env.get("MINIO_BUCKET_OUTPUT") is not None:
                 set_path(("minio", "bucket_output"), get("MINIO_BUCKET_OUTPUT"))
             if env.get("MINIO_SECURE") is not None:
-                set_path(("minio", "secure"), get("MINIO_SECURE"))
+                # Convert string to boolean
+                secure_val = get("MINIO_SECURE").lower() in ("true", "1", "yes")
+                set_path(("minio", "secure"), secure_val)
 
             # Redis (legacy vars)
             # Support full REDIS_URL (takes precedence)

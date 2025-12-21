@@ -106,3 +106,23 @@ async def health_check():
             "script_matching_available": SCRIPT_MATCHING_AVAILABLE
         }
     }
+
+
+@app.get("/debug/config")
+async def debug_config():
+    """Debug endpoint to check configuration (remove in production)."""
+    settings = get_settings()
+    return {
+        "minio": {
+            "endpoint": settings.minio.endpoint,
+            "access_key_set": bool(settings.minio.access_key and settings.minio.access_key != "minioadmin"),
+            "secret_key_set": bool(settings.minio.secret_key and settings.minio.secret_key != "minioadmin"),
+            "bucket_videos": settings.minio.bucket_videos,
+            "bucket_audio": settings.minio.bucket_audio,
+            "bucket_output": settings.minio.bucket_output,
+            "secure": settings.minio.secure,
+        },
+        "redis": {
+            "url": settings.redis_url,
+        }
+    }
