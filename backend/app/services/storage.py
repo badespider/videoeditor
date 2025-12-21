@@ -60,13 +60,19 @@ class StorageService:
             for bucket in buckets:
                 print(f"🔍 Checking bucket: {bucket}", flush=True)
                 try:
-                    exists = self.client.bucket_exists(bucket)
-                    if exists:
-                        print(f"✅ Bucket exists: {bucket}", flush=True)
-                    else:
-                        print(f"📦 Creating bucket: {bucket}", flush=True)
-                        self.client.make_bucket(bucket)
-                        print(f"✅ Created bucket: {bucket}", flush=True)
+                    # Try to get bucket location instead of bucket_exists()
+                    # bucket_exists() calls ListBuckets which requires s3:ListAllMyBuckets
+                    # get_bucket_location() only requires s3:GetBucketLocation on the specific bucket
+                    try:
+                        location = self.client.get_bucket_location(bucket)
+                        print(f"✅ Bucket exists: {bucket} (location: {location})", flush=True)
+                    except S3Error as loc_err:
+                        if loc_err.code == "NoSuchBucket":
+                            print(f"📦 Creating bucket: {bucket}", flush=True)
+                            self.client.make_bucket(bucket)
+                            print(f"✅ Created bucket: {bucket}", flush=True)
+                        else:
+                            raise
                 except S3Error as bucket_err:
                     print(f"❌ S3 Error for bucket {bucket}: code={bucket_err.code}, message={bucket_err.message}", flush=True)
                     raise
