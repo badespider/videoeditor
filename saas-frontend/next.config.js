@@ -5,6 +5,12 @@ import("./env.mjs");
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Next.js 16 defaults to Turbopack in some scenarios; `next-contentlayer2`
+  // relies on webpack hooks. Force-disable turbo to avoid "Turbopack + webpack"
+  // config conflicts during Vercel builds.
+  experimental: {
+    turbo: false,
+  },
   images: {
     remotePatterns: [
       {
