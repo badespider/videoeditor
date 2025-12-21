@@ -39,11 +39,48 @@ export const {
     signIn: "/login",
     // error: "/auth/error",
   },
-  // Force non-secure cookies (without __Secure- prefix) to work around
-  // Vercel serverless cookie handling issues
-  useSecureCookies: false,
   // Enable debug logging to diagnose issues
   debug: true,
+  // Explicit cookie configuration for production HTTPS
+  cookies: {
+    sessionToken: {
+      name: `authjs.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
+      },
+    },
+    callbackUrl: {
+      name: `authjs.callback-url`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
+      },
+    },
+    csrfToken: {
+      name: `authjs.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
+      },
+    },
+    // Nonce cookie - critical for OAuth verification
+    nonce: {
+      name: `authjs.nonce`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: true,
+      },
+    },
+  },
   callbacks: {
     async session({ token, session }) {
       if (session.user) {
