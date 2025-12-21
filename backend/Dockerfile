@@ -74,5 +74,6 @@ RUN mkdir -p /app/temp/scenes /app/temp/audio /app/temp/frames
 
 EXPOSE 8000
 
-# Use shell form to expand $PORT environment variable (Railway sets this)
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Railway sets PORT env var - default to 8080 if not set
+# Using exec form with shell to expand PORT variable
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}
