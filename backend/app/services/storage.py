@@ -57,17 +57,20 @@ class StorageService:
         print(f"🔧 S3 Buckets: {buckets}", flush=True)
         
         try:
-            for bucket in buckets:
+            # De-duplicate buckets (all three might be the same bucket)
+            unique_buckets = list(set(buckets))
+            
+            for bucket in unique_buckets:
                 print(f"🔍 Checking bucket: {bucket}", flush=True)
                 try:
-                    # Try to get bucket location instead of bucket_exists()
-                    # bucket_exists() calls ListBuckets which requires s3:ListAllMyBuckets
-                    # get_bucket_location() only requires s3:GetBucketLocation on the specific bucket
+                    # Try to list objects with max_keys=1 to check if bucket exists and is accessible
+                    # This only requires s3:ListBucket permission on the specific bucket
+                    # Unlike bucket_exists() which calls ListBuckets (requires s3:ListAllMyBuckets)
                     try:
-                        location = self.client.get_bucket_location(bucket)
-                        print(f"✅ Bucket exists: {bucket} (location: {location})", flush=True)
-                    except S3Error as loc_err:
-                        if loc_err.code == "NoSuchBucket":
+                        objects = list(self.client.list_objects(bucket, max_keys=1))
+                        print(f"✅ Bucket accessible: {bucket}", flush=True)
+                    except S3Error as list_err:
+                        if list_err.code == "NoSuchBucket":
                             print(f"📦 Creating bucket: {bucket}", flush=True)
                             self.client.make_bucket(bucket)
                             print(f"✅ Created bucket: {bucket}", flush=True)
