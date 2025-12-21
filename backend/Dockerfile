@@ -21,7 +21,8 @@ COPY requirements.txt .
 COPY constraints.txt .
 
 # Marker so we can confirm in Railway logs that the *latest* Dockerfile is being used
-RUN echo "Video Recap AI backend build: CPU torch v4 - FORCE CPU ONLY"
+# VERSION 5 - 2024-12-21 - Force rebuild with sentence-transformers
+RUN echo "=== Video Recap AI backend build v5 - sentence-transformers fix ==="
 
 # CRITICAL: Set pip to ONLY use CPU PyTorch index for torch packages
 # This prevents any CUDA downloads
@@ -31,7 +32,8 @@ ENV PIP_EXTRA_INDEX_URL=https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir torch==2.2.2+cpu --index-url https://download.pytorch.org/whl/cpu
 
 # Install sentence-transformers and transformers with torch already satisfied
-RUN pip install --no-cache-dir sentence-transformers==2.7.0 transformers==4.39.3
+RUN pip install --no-cache-dir sentence-transformers==2.7.0 transformers==4.39.3 && \
+    python -c "from sentence_transformers import SentenceTransformer; print('✅ sentence_transformers installed successfully')"
 
 # Install remaining Python dependencies (torch already installed, will be skipped)
 RUN pip install --no-cache-dir -r requirements.txt -c constraints.txt
