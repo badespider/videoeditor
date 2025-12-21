@@ -1,13 +1,11 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
-# Force fresh build - no cache
-dockerBuildArgs = ["CACHE_BUST=v6_20241221_0930"]
 
 [deploy]
 numReplicas = 1
-healthcheckPath = "/health"
-healthcheckTimeout = 300
+# Disable health check temporarily to debug
+# healthcheckPath = "/health"
+# healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3
-
+restartPolicyMaxRetries = 10

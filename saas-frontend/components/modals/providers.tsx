@@ -21,7 +21,7 @@ export default function ModalProvider({ children }: { children: ReactNode }) {
     >
       {/* Next.js requires useSearchParams() to be under a Suspense boundary */}
       <Suspense fallback={null}>
-        <SignInModal />
+      <SignInModal />
       </Suspense>
       {children}
     </ModalContext.Provider>

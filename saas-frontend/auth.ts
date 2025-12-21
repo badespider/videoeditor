@@ -153,16 +153,16 @@ export const {
       if (!token.sub) return token;
 
       try {
-        const dbUser = await getUserById(token.sub);
+      const dbUser = await getUserById(token.sub);
         if (!dbUser) {
           console.log("[auth] jwt callback - user not found in db", { sub: token.sub });
           return token;
         }
 
-        token.name = dbUser.name;
-        token.email = dbUser.email;
-        token.picture = dbUser.image;
-        token.role = dbUser.role;
+      token.name = dbUser.name;
+      token.email = dbUser.email;
+      token.picture = dbUser.image;
+      token.role = dbUser.role;
       } catch (error) {
         console.error("[auth] jwt callback error", error);
       }
