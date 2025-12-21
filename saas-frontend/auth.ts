@@ -27,6 +27,8 @@ export const {
   handlers: { GET, POST },
   auth,
 } = NextAuth({
+  // Spread authConfig first so our settings below take precedence
+  ...authConfig,
   // Vercel + custom domains are behind a proxy; trust the host headers
   trustHost: true,
   // Ensure all invocations use the same secret (prevents PKCE/state parse failures)
@@ -37,6 +39,8 @@ export const {
     signIn: "/login",
     // error: "/auth/error",
   },
+  // Enable debug logging to diagnose PKCE issues
+  debug: true,
   callbacks: {
     async session({ token, session }) {
       if (session.user) {
@@ -74,6 +78,4 @@ export const {
       return token;
     },
   },
-  ...authConfig,
-  // debug: process.env.NODE_ENV !== "production"
 });
