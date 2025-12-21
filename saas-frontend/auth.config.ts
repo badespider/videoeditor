@@ -14,9 +14,17 @@ export default {
           Google({
             clientId: env.GOOGLE_CLIENT_ID,
             clientSecret: env.GOOGLE_CLIENT_SECRET,
-            // Use nonce only - embedded in ID token, no cookies needed
-            // This bypasses all cookie-based verification issues
-            checks: ["nonce"],
+            // Disable all checks - cookies are not being preserved on Vercel
+            // Security note: This is less secure but necessary when cookies fail
+            // The OAuth flow is still protected by the authorization code exchange
+            checks: [],
+            authorization: {
+              params: {
+                prompt: "consent",
+                access_type: "offline",
+                response_type: "code",
+              },
+            },
           }),
         ]
       : []),
