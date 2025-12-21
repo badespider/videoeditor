@@ -8,7 +8,7 @@ import { absoluteUrl } from "@/lib/utils";
 
 const billingUrl = absoluteUrl("/dashboard/billing");
 
-export async function generateTopUpStripe(priceId: string) {
+export async function generateTopupStripe(priceId: string) {
   const session = await auth();
   const user = session?.user;
 
