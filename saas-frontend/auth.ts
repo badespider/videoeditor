@@ -23,6 +23,10 @@ declare module "next-auth" {
   }
 }
 
+// Determine if we're in production (HTTPS)
+const useSecureCookies = process.env.NODE_ENV === "production";
+const cookiePrefix = useSecureCookies ? "__Secure-" : "";
+
 export const {
   handlers: { GET, POST },
   auth,
@@ -38,6 +42,30 @@ export const {
   pages: {
     signIn: "/login",
     // error: "/auth/error",
+  },
+  // Configure cookies to work with OAuth redirects
+  // The PKCE cookie must use sameSite: "none" to survive the cross-site redirect from Google
+  cookies: {
+    pkceCodeVerifier: {
+      name: `${cookiePrefix}authjs.pkce.code_verifier`,
+      options: {
+        httpOnly: true,
+        sameSite: "none", // Required for cross-site OAuth redirects
+        path: "/",
+        secure: useSecureCookies,
+        maxAge: 60 * 15, // 15 minutes
+      },
+    },
+    state: {
+      name: `${cookiePrefix}authjs.state`,
+      options: {
+        httpOnly: true,
+        sameSite: "none", // Required for cross-site OAuth redirects  
+        path: "/",
+        secure: useSecureCookies,
+        maxAge: 60 * 15, // 15 minutes
+      },
+    },
   },
   // Enable debug logging to diagnose PKCE issues
   debug: true,
