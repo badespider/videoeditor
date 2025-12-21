@@ -14,9 +14,9 @@ export default {
           Google({
             clientId: env.GOOGLE_CLIENT_ID,
             clientSecret: env.GOOGLE_CLIENT_SECRET,
-            // Use state-based verification instead of PKCE
-            // PKCE cookies can fail on cross-site OAuth redirects in some browser configurations
-            checks: ["state"],
+            // Use nonce only - embedded in ID token, no cookies needed
+            // This bypasses all cookie-based verification issues
+            checks: ["nonce"],
           }),
         ]
       : []),
