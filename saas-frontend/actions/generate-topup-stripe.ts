@@ -39,5 +39,8 @@ export async function generateTopupStripe(priceId: string) {
   redirect(stripeSession.url as string);
 }
 
+// Backwards-compatible export (some callers use `generateTopupStripe` casing)
+export const generateTopupStripe = generateTopUpStripe;
+
 
 

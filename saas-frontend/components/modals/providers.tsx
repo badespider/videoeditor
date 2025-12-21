@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, Dispatch, ReactNode, SetStateAction } from "react";
+import { Suspense, createContext, Dispatch, ReactNode, SetStateAction } from "react";
 
 import { useSignInModal } from "@/components/modals//sign-in-modal";
 
@@ -19,7 +19,10 @@ export default function ModalProvider({ children }: { children: ReactNode }) {
         setShowSignInModal,
       }}
     >
-      <SignInModal />
+      {/* Next.js requires useSearchParams() to be under a Suspense boundary */}
+      <Suspense fallback={null}>
+        <SignInModal />
+      </Suspense>
       {children}
     </ModalContext.Provider>
   );
