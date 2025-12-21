@@ -5,7 +5,17 @@ import os
 
 from app.config import get_settings
 from app.services.storage import StorageService
-from app.routers import videos, jobs, preview, webhooks, characters, script_matching
+from app.routers import videos, jobs, preview, webhooks, characters
+
+# Try to import script_matching - it requires sentence_transformers which may not be installed
+try:
+    from app.routers import script_matching
+    SCRIPT_MATCHING_AVAILABLE = True
+    print("✅ Script matching module loaded (sentence_transformers available)", flush=True)
+except ImportError as e:
+    SCRIPT_MATCHING_AVAILABLE = False
+    print(f"⚠️ Script matching module not available: {e}", flush=True)
+    print("   Video processing will work, but script-to-clip matching is disabled.", flush=True)
 
 
 @asynccontextmanager
@@ -33,8 +43,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Anime Recap Pipeline",
-    description="Automated anime recap video generator using Memories.ai and ElevenLabs",
+    title="Video Recap AI Pipeline",
+    description="Automated video recap generator using AI",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -65,7 +75,10 @@ app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
 app.include_router(preview.router, prefix="/api/preview", tags=["Preview"])
 app.include_router(webhooks.router, prefix="/api/webhooks", tags=["Webhooks"])
 app.include_router(characters.router, prefix="/api/characters", tags=["Characters"])
-app.include_router(script_matching.router, prefix="/api/script-matching", tags=["Script Matching"])
+
+# Only include script_matching if the module is available
+if SCRIPT_MATCHING_AVAILABLE:
+    app.include_router(script_matching.router, prefix="/api/script-matching", tags=["Script Matching"])
 
 
 @app.get("/")
@@ -73,7 +86,7 @@ async def root():
     """Health check endpoint."""
     return {
         "status": "healthy",
-        "service": "Anime Recap Pipeline",
+        "service": "Video Recap AI Pipeline",
         "version": "1.0.0"
     }
 
@@ -89,7 +102,7 @@ async def health_check():
             "elevenlabs_configured": bool(settings.elevenlabs.api_key),
             "minio_endpoint": settings.minio.endpoint,
             "storage_ready": bool(getattr(app.state, "storage_ready", False)),
-            "redis_url": settings.redis_url
+            "redis_url": settings.redis_url,
+            "script_matching_available": SCRIPT_MATCHING_AVAILABLE
         }
     }
-
