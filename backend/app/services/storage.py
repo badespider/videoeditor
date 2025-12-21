@@ -19,11 +19,24 @@ class StorageService:
     
     def __init__(self):
         self.settings = get_settings()
+        
+        # Extract region from endpoint if it's AWS S3
+        # e.g., s3.us-east-2.amazonaws.com -> us-east-2
+        endpoint = self.settings.minio.endpoint
+        region = None
+        if "amazonaws.com" in endpoint:
+            # Parse region from endpoint like s3.us-east-2.amazonaws.com
+            parts = endpoint.split(".")
+            if len(parts) >= 3 and parts[0] == "s3":
+                region = parts[1]
+                print(f"🔧 Detected AWS S3 region: {region}", flush=True)
+        
         self.client = Minio(
             self.settings.minio.endpoint,
             access_key=self.settings.minio.access_key,
             secret_key=self.settings.minio.secret_key,
-            secure=self.settings.minio.secure
+            secure=self.settings.minio.secure,
+            region=region  # Required for AWS S3
         )
         
         # Public endpoint for direct URLs (output bucket is public)
