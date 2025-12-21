@@ -40,12 +40,12 @@ python-levenshtein==0.25.1
 # Google Gemini API
 google-generativeai>=0.8.0
 
-# PyTorch (CPU-only). The Dockerfile installs torch first; we keep this here so
-# pip dependency resolution stays aligned with constraints.txt.
-torch==2.2.2+cpu
+# PyTorch CPU-only - INSTALLED SEPARATELY IN DOCKERFILE
+# DO NOT UNCOMMENT - torch is pre-installed to avoid CUDA downloads
+# torch==2.2.2+cpu
 
-# Vector embeddings and semantic matching
-sentence-transformers==2.7.0
-transformers==4.39.3
+# Vector embeddings and semantic matching - INSTALLED SEPARATELY IN DOCKERFILE
+# sentence-transformers==2.7.0
+# transformers==4.39.3
 spacy>=3.7.0
 scikit-learn>=1.3.0
