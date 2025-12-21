@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+import os
 
 from app.config import get_settings
 from app.services.storage import StorageService
@@ -13,8 +14,17 @@ async def lifespan(app: FastAPI):
     # Startup: Initialize storage buckets
     settings = get_settings()
     storage = StorageService()
-    storage.ensure_buckets()
-    print("✅ Storage buckets initialized")
+    storage_ready = storage.ensure_buckets()
+    app.state.storage_ready = bool(storage_ready)
+    if storage_ready:
+        print("✅ Storage buckets initialized", flush=True)
+    else:
+        # Common Railway cause: MINIO_ENDPOINT not set and default points to docker host `minio`
+        # Keep app running so other endpoints can work; storage-dependent endpoints should fail gracefully.
+        print(
+            "⚠️ Storage is not ready. Configure MINIO_ENDPOINT / MINIO_ACCESS_KEY / MINIO_SECRET_KEY (or S3-compatible endpoint).",
+            flush=True,
+        )
     
     yield
     
@@ -78,6 +88,7 @@ async def health_check():
             "memories_configured": bool(settings.memories.api_key),
             "elevenlabs_configured": bool(settings.elevenlabs.api_key),
             "minio_endpoint": settings.minio.endpoint,
+            "storage_ready": bool(getattr(app.state, "storage_ready", False)),
             "redis_url": settings.redis_url
         }
     }

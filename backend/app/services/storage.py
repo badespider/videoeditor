@@ -38,27 +38,36 @@ class StorageService:
             self.settings.minio.bucket_audio,
             self.settings.minio.bucket_output
         ]
-        
-        for bucket in buckets:
-            if not self.client.bucket_exists(bucket):
-                self.client.make_bucket(bucket)
-                print(f"Created bucket: {bucket}")
-        
-        # Ensure output bucket is publicly readable for video playback
-        output_bucket = self.settings.minio.bucket_output
-        policy = {
-            'Version': '2012-10-17',
-            'Statement': [{
-                'Effect': 'Allow',
-                'Principal': {'AWS': ['*']},
-                'Action': ['s3:GetObject'],
-                'Resource': [f'arn:aws:s3:::{output_bucket}/*']
-            }]
-        }
         try:
-            self.client.set_bucket_policy(output_bucket, json.dumps(policy))
+            for bucket in buckets:
+                if not self.client.bucket_exists(bucket):
+                    self.client.make_bucket(bucket)
+                    print(f"Created bucket: {bucket}", flush=True)
+
+            # Ensure output bucket is publicly readable for video playback
+            output_bucket = self.settings.minio.bucket_output
+            policy = {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Principal": {"AWS": ["*"]},
+                        "Action": ["s3:GetObject"],
+                        "Resource": [f"arn:aws:s3:::{output_bucket}/*"],
+                    }
+                ],
+            }
+            try:
+                self.client.set_bucket_policy(output_bucket, json.dumps(policy))
+            except Exception as e:
+                print(f"Warning: Could not set output bucket policy: {e}", flush=True)
+
+            return True
         except Exception as e:
-            print(f"Warning: Could not set output bucket policy: {e}")
+            # In production (Railway), MinIO may not be configured yet. Don't crash the whole app;
+            # instead start up and report storage as unhealthy.
+            print(f"⚠️ Storage initialization failed (MinIO/S3 unreachable?): {e}", flush=True)
+            return False
     
     def upload_file(
         self,
