@@ -7,7 +7,7 @@
     "url": "https://twitter.com/mickasmt"
   },
   "scripts": {
-    "dev": "next dev --webpack",
+    "dev": "next dev --port 3001",
     "build": "next build",
     "turbo": "next dev --turbo",
     "start": "next start",
