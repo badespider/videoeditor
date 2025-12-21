@@ -63,11 +63,15 @@ class StorageService:
             for bucket in unique_buckets:
                 print(f"🔍 Checking bucket: {bucket}", flush=True)
                 try:
-                    # Try to list objects with max_keys=1 to check if bucket exists and is accessible
+                    # Try to list objects to check if bucket exists and is accessible
                     # This only requires s3:ListBucket permission on the specific bucket
                     # Unlike bucket_exists() which calls ListBuckets (requires s3:ListAllMyBuckets)
                     try:
-                        objects = list(self.client.list_objects(bucket, max_keys=1))
+                        # MinIO client uses different API - just iterate once
+                        obj_iter = self.client.list_objects(bucket, prefix="", recursive=False)
+                        # Just try to get one object (or none) to verify access
+                        for _ in obj_iter:
+                            break
                         print(f"✅ Bucket accessible: {bucket}", flush=True)
                     except S3Error as list_err:
                         if list_err.code == "NoSuchBucket":
