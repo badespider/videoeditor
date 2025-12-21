@@ -1,4 +1,4 @@
-const { withContentlayer } = require("next-contentlayer2");
+// const { withContentlayer } = require("next-contentlayer2");
 
 import("./env.mjs");
 
@@ -33,4 +33,4 @@ const nextConfig = {
     turbopack: {},
 };
 
-module.exports = withContentlayer(nextConfig);
+module.exports = nextConfig;
