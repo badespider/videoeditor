@@ -24,6 +24,7 @@ const nextConfig = {
   // Next.js 16: serverComponentsExternalPackages moved out of experimental.
   // Keep Prisma on the server bundle allowlist.
   serverExternalPackages: ["@prisma/client"],
+    turbopack: {},
 };
 
 module.exports = withContentlayer(nextConfig);
