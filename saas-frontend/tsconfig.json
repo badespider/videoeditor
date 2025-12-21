@@ -45,6 +45,6 @@
   ],
   "exclude": [
     "node_modules",
-    "app/_disabled_routes"
+    "_disabled_routes/**"
   ]
 }

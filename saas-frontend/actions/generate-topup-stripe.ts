@@ -39,6 +39,3 @@ export async function generateTopupStripe(priceId: string) {
   redirect(stripeSession.url as string);
 }
 
-
-
-
