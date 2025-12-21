@@ -38,11 +38,25 @@ class StorageService:
             self.settings.minio.bucket_audio,
             self.settings.minio.bucket_output
         ]
+        
+        # Debug: Print connection info (without secrets)
+        print(f"🔧 S3 Config: endpoint={self.settings.minio.endpoint}, secure={self.settings.minio.secure}", flush=True)
+        print(f"🔧 S3 Buckets: {buckets}", flush=True)
+        
         try:
             for bucket in buckets:
-                if not self.client.bucket_exists(bucket):
-                    self.client.make_bucket(bucket)
-                    print(f"Created bucket: {bucket}", flush=True)
+                print(f"🔍 Checking bucket: {bucket}", flush=True)
+                try:
+                    exists = self.client.bucket_exists(bucket)
+                    if exists:
+                        print(f"✅ Bucket exists: {bucket}", flush=True)
+                    else:
+                        print(f"📦 Creating bucket: {bucket}", flush=True)
+                        self.client.make_bucket(bucket)
+                        print(f"✅ Created bucket: {bucket}", flush=True)
+                except S3Error as bucket_err:
+                    print(f"❌ S3 Error for bucket {bucket}: code={bucket_err.code}, message={bucket_err.message}", flush=True)
+                    raise
 
             # Ensure output bucket is publicly readable for video playback
             output_bucket = self.settings.minio.bucket_output
@@ -59,9 +73,11 @@ class StorageService:
             }
             try:
                 self.client.set_bucket_policy(output_bucket, json.dumps(policy))
+                print(f"✅ Set public read policy on {output_bucket}", flush=True)
             except Exception as e:
-                print(f"Warning: Could not set output bucket policy: {e}", flush=True)
+                print(f"⚠️ Could not set output bucket policy (may already exist): {e}", flush=True)
 
+            print("✅ Storage initialization complete!", flush=True)
             return True
         except Exception as e:
             # In production (Railway), MinIO may not be configured yet. Don't crash the whole app;
