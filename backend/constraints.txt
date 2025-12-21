@@ -1,5 +1,11 @@
 # Hard constraints to prevent pip from upgrading torch to CUDA builds on Railway.
 # We want CPU-only wheels to keep image size + build times reasonable.
-torch==2.1.0+cpu
+#
+# IMPORTANT:
+# - Pin torch to a CPU-only build (+cpu) to avoid massive CUDA downloads.
+# - Pin transformers/sentence-transformers to versions compatible with this torch API.
+torch==2.2.2+cpu
 
-
+# Keep the embeddings stack stable (avoid torch/transformers API mismatches)
+transformers==4.39.3
+sentence-transformers==2.7.0

@@ -22,11 +22,12 @@ class VideoIndexer:
 
     def __init__(self):
         self.settings = get_settings()
+        self.vector_config = self.settings.features.vector_matching
         self.memories_client = MemoriesAIClient()
         self.vector_store = VectorStore()
         
         # Initialize embedding model (cached)
-        model_name = self.settings.features.vector_matching.embedding_model_name
+        model_name = self.vector_config.embedding_model_name
         print(f"🤖 Loading embedding model: {model_name}", flush=True)
         self.embedding_model = SentenceTransformer(model_name)
         print(f"✅ Embedding model loaded", flush=True)

@@ -21,14 +21,14 @@ COPY backend/requirements.txt .
 COPY backend/constraints.txt .
 
 # Marker so we can confirm in Railway logs that the *latest* Dockerfile is being used
-RUN echo "Video Recap AI backend build: CPU torch pinned (v2)"
+RUN echo "Video Recap AI backend build: CPU torch pinned (v3: torch 2.2.2+cpu)"
 
 # Install PyTorch CPU-only FIRST (before other packages pull in CUDA version)
 # This significantly reduces build time and image size
-RUN pip install --no-cache-dir torch==2.1.0+cpu --extra-index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu torch==2.2.2+cpu
 
 # Install remaining Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt -c constraints.txt
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt -c constraints.txt
 
 # Download spaCy model
 RUN python -m spacy download en_core_web_sm
