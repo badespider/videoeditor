@@ -1,6 +1,8 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
+# Force fresh build - no cache
+dockerBuildArgs = ["CACHE_BUST=v6_20241221_0930"]
 
 [deploy]
 numReplicas = 1
