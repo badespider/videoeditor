@@ -37,10 +37,40 @@ export const {
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
-    // error: "/auth/error",
+    error: "/login", // Redirect errors to login page instead of default error page
   },
   // Enable debug logging to diagnose issues
   debug: true,
+  // Log all events for debugging
+  events: {
+    async signIn(message) {
+      console.log("[auth][event] signIn", JSON.stringify(message));
+    },
+    async signOut(message) {
+      console.log("[auth][event] signOut", JSON.stringify(message));
+    },
+    async createUser(message) {
+      console.log("[auth][event] createUser", JSON.stringify(message));
+    },
+    async linkAccount(message) {
+      console.log("[auth][event] linkAccount", JSON.stringify(message));
+    },
+    async session(message) {
+      console.log("[auth][event] session", JSON.stringify(message));
+    },
+  },
+  // Handle errors explicitly
+  logger: {
+    error(code, ...message) {
+      console.error("[auth][error]", code, JSON.stringify(message));
+    },
+    warn(code, ...message) {
+      console.warn("[auth][warn]", code, JSON.stringify(message));
+    },
+    debug(code, ...message) {
+      console.log("[auth][debug]", code, JSON.stringify(message));
+    },
+  },
   // Explicit cookie configuration for production HTTPS
   cookies: {
     sessionToken: {
