@@ -41,9 +41,14 @@ class RedisConfig(BaseModel):
     port: int = 6379
     db: int = 0
     password: str = ""
+    # Allow setting a full URL directly (takes precedence over individual fields)
+    full_url: str = ""
 
     @property
     def url(self) -> str:
+        # If full_url is set (e.g., from REDIS_URL env var), use it directly
+        if self.full_url:
+            return self.full_url
         if self.password:
             return f"redis://:{self.password}@{self.host}:{self.port}/{self.db}"
         return f"redis://{self.host}:{self.port}/{self.db}"
@@ -313,6 +318,9 @@ class Settings(BaseSettings):
                 set_path(("minio", "secure"), get("MINIO_SECURE"))
 
             # Redis (legacy vars)
+            # Support full REDIS_URL (takes precedence)
+            if env.get("REDIS_URL") is not None:
+                set_path(("redis", "full_url"), get("REDIS_URL"))
             if env.get("REDIS_HOST") is not None:
                 set_path(("redis", "host"), get("REDIS_HOST"))
             if env.get("REDIS_PORT") is not None:
