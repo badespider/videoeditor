@@ -44,7 +44,7 @@ from app.services.copyright_protector import CopyrightProtector, ProtectedScene
 from app.services.character_extractor import CharacterExtractor
 from app.services.character_database import CharacterDatabase
 from app.services.ffmpeg_utils import run_ffmpeg_capture, FFmpegError, sanitize_ffmpeg_stderr
-from app.services.video_indexer import VideoIndexer
+# VideoIndexer (sentence_transformers) is optional; import lazily when needed.
 
 
 @dataclass
@@ -975,9 +975,13 @@ class PipelineWorker:
                         current_step="Indexing video for semantic matching..."
                     )
                     
-                    video_indexer = VideoIndexer()
-                    await video_indexer.index_video(video_no)
-                    print(f"✅ Video indexed for vector matching", flush=True)
+                    try:
+                        from app.services.video_indexer import VideoIndexer
+                        video_indexer = VideoIndexer()
+                        await video_indexer.index_video(video_no)
+                        print("✅ Video indexed for vector matching", flush=True)
+                    except Exception as e:
+                        print(f"⚠️ Vector matching unavailable; skipping indexing: {e}", flush=True)
                 except Exception as e:
                     print(f"⚠️ Video indexing failed (will use fallback matching): {e}", flush=True)
                     # Don't fail the job - fallback to existing SceneMatcher

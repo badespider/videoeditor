@@ -8,7 +8,13 @@ vector-based script-to-clip matching.
 import json
 from typing import List, Dict, Optional
 import numpy as np
-from sentence_transformers import SentenceTransformer
+try:
+    from sentence_transformers import SentenceTransformer
+    SENTENCE_TRANSFORMERS_AVAILABLE = True
+except Exception:
+    # Allow API + worker to run without the optional embeddings dependency.
+    # Vector matching will be disabled when unavailable.
+    SENTENCE_TRANSFORMERS_AVAILABLE = False
 
 from app.config import get_settings
 from app.services.memories_client import MemoriesAIClient
@@ -26,17 +32,24 @@ class VideoIndexer:
         self.memories_client = MemoriesAIClient()
         self.vector_store = VectorStore()
         
+        if not SENTENCE_TRANSFORMERS_AVAILABLE:
+            self.embedding_model = None
+            print("⚠️ sentence_transformers not installed. Vector matching disabled.", flush=True)
+            return
+
         # Initialize embedding model (cached)
         model_name = self.vector_config.embedding_model_name
         print(f"🤖 Loading embedding model: {model_name}", flush=True)
         self.embedding_model = SentenceTransformer(model_name)
-        print(f"✅ Embedding model loaded", flush=True)
+        print("✅ Embedding model loaded", flush=True)
 
     async def index_video(
         self, 
         video_no: str, 
         video_path: Optional[str] = None
     ) -> List[Dict]:
+        if not self.embedding_model:
+            raise RuntimeError("Vector matching requires sentence_transformers, which is not available.")
         """
         Create embeddings for all chapters/scenes in a video.
         
