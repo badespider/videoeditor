@@ -14,6 +14,7 @@
     "lint": "next lint",
     "preview": "next build && next start",
     "postinstall": "prisma generate",
+    "test:topup": "node scripts/test-topup-webhook.js",
     "email": "email dev --dir emails --port 3333"
   },
   "dependencies": {
