@@ -54,4 +54,29 @@ class CopyrightProtector:
             audio_duration=float(audio_duration),
         )
 
+    async def process_scene_with_alternates(
+        self,
+        *,
+        video_start: float,
+        video_end: float,
+        audio_path: str,
+        audio_duration: float,
+        scene_id: int,
+        alternates: Optional[object] = None,
+    ) -> ProtectedScene:
+        """
+        Backwards-compatible async API expected by the pipeline.
+
+        The current implementation does not apply any visual transformations; it simply
+        returns a ProtectedScene describing the intended stitch range.
+        """
+        return self.process_scene(
+            video_start=video_start,
+            video_end=video_end,
+            audio_path=audio_path,
+            audio_duration=audio_duration,
+            scene_id=scene_id,
+            alternates=alternates,
+        )
+
 
