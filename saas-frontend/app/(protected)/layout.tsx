@@ -20,12 +20,15 @@ export default async function Dashboard({ children }: ProtectedLayoutProps) {
 
   if (!user) redirect("/login");
 
-  const filteredLinks = sidebarLinks.map((section) => ({
-    ...section,
-    items: section.items.filter(
-      ({ authorizeOnly }) => !authorizeOnly || authorizeOnly === user.role,
-    ),
-  }));
+  const filteredLinks = sidebarLinks
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        ({ authorizeOnly }) => !authorizeOnly || authorizeOnly === user.role,
+      ),
+    }))
+    // Hide empty sections (e.g. show ADMIN section only if it has visible items)
+    .filter((section) => section.items.length > 0);
 
   return (
     <div className="relative flex min-h-screen w-full">
