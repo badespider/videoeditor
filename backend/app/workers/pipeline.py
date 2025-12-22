@@ -165,6 +165,13 @@ class PipelineWorker:
     
     def __init__(self):
         self.settings = get_settings()
+
+        # Safety default: ffmpeg can OOM small containers when it uses many threads.
+        # Let ops override via env var in Railway; but if unset, default to 1 for workers.
+        if os.getenv("FFMPEG_THREADS") is None:
+            os.environ["FFMPEG_THREADS"] = "1"
+            print("🔧 Defaulting FFMPEG_THREADS=1 for worker stability (override via env if needed)", flush=True)
+
         self.job_manager = JobManager()
         self.storage = StorageService()
         self.memories_client = MemoriesAIClient()
