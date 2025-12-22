@@ -876,6 +876,12 @@ class PipelineWorker:
                 upload_video = compressed_video
             else:
                 upload_video = local_video
+
+            # IMPORTANT: use the optimized video for stitching when available.
+            # Stitching against the original (1440p/4K) frequently OOM-kills ffmpeg on small workers.
+            stitch_video = upload_video
+            if stitch_video != local_video:
+                print(f"🎬 Stitch source set to optimized video for stability: {stitch_video}", flush=True)
             
             # ==== Step 2: Upload to Memories.ai ====
             self.job_manager.update_job(
@@ -1993,7 +1999,7 @@ class PipelineWorker:
                     raw_output_path = os.path.join(work_dir, "raw_recap.mp4")
                     await asyncio.to_thread(
                         self.video_editor.elastic_stitch_protected_scenes,
-                        local_video,
+                        stitch_video,
                         protected_scenes,
                         raw_output_path
                     )
@@ -2039,7 +2045,7 @@ class PipelineWorker:
                     
                     output_path = os.path.join(work_dir, "final_recap.mp4")
                     await self.video_editor.stitch_elastic(
-                        source_video=local_video,
+                        source_video=stitch_video,
                         scenes=scenes_for_editor,
                         output_path=output_path
                     )
@@ -2060,7 +2066,7 @@ class PipelineWorker:
                 
                 output_path = os.path.join(work_dir, "final_recap.mp4")
                 await self.video_editor.stitch_elastic(
-                    source_video=local_video,
+                    source_video=stitch_video,
                     scenes=scenes_for_editor,
                     output_path=output_path
                 )
