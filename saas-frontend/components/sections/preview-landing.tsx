@@ -11,9 +11,10 @@ export default function PreviewLanding() {
             <Image
               className="size-full object-cover object-center dark:opacity-85 dark:invert"
               src="/_static/blog/blog-post-3.jpg"
-              alt="Video Recap AI dashboard preview"
+              alt="Video Recap AI dashboard preview showing the recap generation interface"
               width={2000}
               height={1000}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
               priority={true}
             />
           </div>

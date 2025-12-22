@@ -26,10 +26,24 @@ const nextConfig = {
         hostname: "randomuser.me",
       },
     ],
+    // Optimize images with modern formats
+    formats: ["image/avif", "image/webp"],
+    // Set reasonable device sizes for responsive images
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   // Next.js 16: serverComponentsExternalPackages moved out of experimental.
   // Keep Prisma on the server bundle allowlist.
   serverExternalPackages: ["@prisma/client"],
+  // Compress output for better performance
+  compress: true,
+  // Enable powered-by header removal for security
+  poweredByHeader: false,
+  // Experimental optimizations
+  experimental: {
+    // Optimize CSS loading
+    optimizeCss: true,
+  },
 };
 
 module.exports = withContentlayer(nextConfig);

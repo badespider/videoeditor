@@ -15,7 +15,7 @@ const popularLinks = [
   { title: "Pricing", href: "/pricing", description: "View our plans and pricing" },
   { title: "Documentation", href: "/docs", description: "Learn how to use Video Recap AI" },
   { title: "Blog", href: "/blog", description: "Read our latest articles" },
-  { title: "Guides", href: "/guides", description: "Step-by-step tutorials" },
+  { title: "Dashboard", href: "/dashboard", description: "Access your projects" },
 ];
 
 export default function NotFound() {

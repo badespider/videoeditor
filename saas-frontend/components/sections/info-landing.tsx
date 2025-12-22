@@ -54,7 +54,8 @@ export default function InfoLanding({
               alt={data.title}
               width={1000}
               height={500}
-              priority={true}
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              loading="lazy"
             />
           </div>
         </div>

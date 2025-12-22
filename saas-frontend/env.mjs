@@ -22,6 +22,8 @@ export const env = createEnv({
     // Keep separate from NEXT_PUBLIC_APP_URL which may be localhost in development.
     NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
     NEXT_PUBLIC_API_URL: z.string().url().optional(),
+    // Google Analytics 4 Measurement ID (e.g., G-XXXXXXXXXX)
+    NEXT_PUBLIC_GA_MEASUREMENT_ID: z.string().optional(),
     // Subscriptions
     NEXT_PUBLIC_STRIPE_CREATOR_MONTHLY_PLAN_ID: z.string().min(1).optional(),
     NEXT_PUBLIC_STRIPE_STUDIO_MONTHLY_PLAN_ID: z.string().min(1).optional(),
@@ -43,6 +45,8 @@ export const env = createEnv({
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     // Video Editor API
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    // Google Analytics
+    NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
     // Stripe
     STRIPE_API_KEY: process.env.STRIPE_API_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,

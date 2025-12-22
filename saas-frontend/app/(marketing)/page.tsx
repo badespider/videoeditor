@@ -10,9 +10,10 @@ import Testimonials from "@/components/sections/testimonials";
 import { FaqSchema } from "@/components/seo/faq-schema";
 
 export const metadata = constructMetadata({
-  title: "Video Recap AI – Anime & Movie Recap Automation (Script, Voiceover, Clip Map)",
+  title: "Video Recap AI – Anime & Movie Recap Automation",
   description:
     "Video Recap AI helps recap creators publish faster for anime and movies: generate a structured recap script, voiceover, and suggested clip map—with optional copyright-safe editing patterns to reduce claims/blocks.",
+  pathname: "/",
 });
 
 export default function IndexPage() {

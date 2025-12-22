@@ -16,13 +16,20 @@ export function constructMetadata({
   image = siteConfig.ogImage,
   icons = "/favicon.ico",
   noIndex = false,
+  pathname = "/",
 }: {
   title?: string;
   description?: string;
   image?: string;
   icons?: string;
   noIndex?: boolean;
+  /** Path for canonical URL (e.g., "/pricing"). Defaults to "/" */
+  pathname?: string;
 } = {}): Metadata {
+  // Ensure pathname starts with /
+  const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  const canonicalUrl = `${siteConfig.url}${normalizedPath === "/" ? "" : normalizedPath}`;
+
   return {
     title,
     description,
@@ -51,10 +58,13 @@ export function constructMetadata({
       },
     ],
     creator: siteConfig.name,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       type: "website",
       locale: "en_US",
-      url: siteConfig.url,
+      url: canonicalUrl,
       title,
       description,
       siteName: siteConfig.name,

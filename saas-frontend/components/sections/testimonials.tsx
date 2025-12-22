@@ -22,11 +22,13 @@ export default function Testimonials() {
                     <div className="relative mb-4 flex items-center gap-3">
                       <span className="relative inline-flex size-10 shrink-0 items-center justify-center rounded-full text-base">
                         <Image
-                          width={100}
-                          height={100}
+                          width={40}
+                          height={40}
                           className="size-full rounded-full border"
                           src={item.image}
-                          alt={item.name}
+                          alt={`${item.name} testimonial avatar`}
+                          sizes="40px"
+                          loading="lazy"
                         />
                       </span>
                       <div>

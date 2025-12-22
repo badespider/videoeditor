@@ -327,22 +327,26 @@ export default function BentoGrid() {
                     </span>
                     <div className="size-7 ring-4 ring-background">
                       <Image
-                        width={100}
-                        height={100}
+                        width={28}
+                        height={28}
                         className="size-full rounded-full border"
                         src="https://randomuser.me/api/portraits/men/4.jpg"
-                        alt="fake-avatar"
+                        alt="Creator Glodie avatar"
+                        sizes="28px"
+                        loading="lazy"
                       />
                     </div>
                   </div>
                   <div className="relative ml-[calc(50%-1rem)] flex items-center gap-2">
                     <div className="size-8 ring-4 ring-background">
                       <Image
-                        width={100}
-                        height={100}
+                        width={32}
+                        height={32}
                         className="size-full rounded-full border"
                         src="https://randomuser.me/api/portraits/men/6.jpg"
-                        alt="fake-avatar"
+                        alt="Creator M. Irung avatar"
+                        sizes="32px"
+                        loading="lazy"
                       />
                     </div>
                     <span className="block h-fit rounded-md border bg-muted/50 px-2 py-1 text-xs">
@@ -355,11 +359,13 @@ export default function BentoGrid() {
                     </span>
                     <div className="size-7 ring-4 ring-background">
                       <Image
-                        width={100}
-                        height={100}
+                        width={28}
+                        height={28}
                         className="size-full rounded-full border"
                         src="https://randomuser.me/api/portraits/men/2.jpg"
-                        alt="fake-avatar"
+                        alt="Creator B. Ng avatar"
+                        sizes="28px"
+                        loading="lazy"
                       />
                     </div>
                   </div>

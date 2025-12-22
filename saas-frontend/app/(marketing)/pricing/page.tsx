@@ -12,6 +12,7 @@ export const metadata = constructMetadata({
   title: "Pricing – Video Recap AI",
   description:
     "Paid plans based on monthly minutes. $20 for 60 minutes, $60 for 180 minutes. Buy rollover top-ups anytime.",
+  pathname: "/pricing",
 });
 
 export default async function PricingPage() {
