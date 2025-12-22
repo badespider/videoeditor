@@ -190,6 +190,16 @@ export default function NewJobPage() {
         throw new Error("Missing backend token");
       }
 
+      // Quick connectivity/CORS check (gives a better error than XHR "network error")
+      try {
+        await fetch(`${apiBase}/health`, { method: "GET" });
+      } catch {
+        throw new Error(
+          "Cannot reach backend from browser (likely CORS or wrong NEXT_PUBLIC_API_URL). " +
+            "Ensure NEXT_PUBLIC_API_URL is https://videoeditor-production-352d.up.railway.app and Railway CORS_ORIGINS includes https://app.videorecapai.com",
+        );
+      }
+
       const formData = new FormData();
       formData.append("file", videoFile);
       if (scriptFile) {
@@ -237,7 +247,20 @@ export default function NewJobPage() {
             }
           }
         });
-        xhr.addEventListener("error", () => reject(new Error("Upload failed - network error")));
+        xhr.timeout = 10 * 60 * 1000; // 10 minutes
+        xhr.addEventListener("timeout", () =>
+          reject(new Error("Upload timed out. Try a smaller file or check your connection.")),
+        );
+        xhr.addEventListener("error", () => {
+          // When CORS blocks the response, browsers surface it as a generic network error (status=0).
+          reject(
+            new Error(
+              "Upload failed - network/CORS error. " +
+                "Check DevTools Console for a CORS message. " +
+                "Fix: set Railway CORS_ORIGINS to include https://app.videorecapai.com and ensure NEXT_PUBLIC_API_URL is correct.",
+            ),
+          );
+        });
         
         // IMPORTANT: upload directly to backend to avoid Vercel function payload limits.
         xhr.open("POST", `${apiBase}/api/videos/upload`);
