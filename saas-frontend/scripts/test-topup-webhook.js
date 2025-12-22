@@ -120,6 +120,8 @@ async function main() {
     metadata: {
       userId: user.id,
       kind: "topup",
+      // Allow webhook to credit minutes without relying on env Price ID mapping.
+      minutes: "60",
     },
   });
 

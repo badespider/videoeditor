@@ -12,6 +12,15 @@ function topUpMinutesForPrice(priceId: string | null | undefined): number | null
   return null;
 }
 
+function topUpMinutesFromMetadata(session: Stripe.Checkout.Session): number | null {
+  const raw = session.metadata?.minutes;
+  if (!raw) return null;
+  const n = Number(raw);
+  // Guardrail: allowlist supported top-up SKUs only.
+  if (Number.isFinite(n) && (n === 60 || n === 120)) return n;
+  return null;
+}
+
 export async function POST(req: Request) {
   const body = await req.text();
   const signature = (await headers()).get("Stripe-Signature") as string;
@@ -62,7 +71,7 @@ export async function POST(req: Request) {
         limit: 5,
       });
       const priceId = lineItems.data?.[0]?.price?.id ?? null;
-      const minutes = topUpMinutesForPrice(priceId);
+      const minutes = topUpMinutesFromMetadata(session) ?? topUpMinutesForPrice(priceId);
       if (!minutes) {
         return new Response("Unknown top-up price id", { status: 400 });
       }
