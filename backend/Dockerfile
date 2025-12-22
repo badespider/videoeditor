@@ -1,13 +1,13 @@
 # Optimized Dockerfile for Railway deployment
 # Uses CPU-only PyTorch to avoid massive CUDA downloads
-# BUILD VERSION 6 - 2024-12-21T09:30 - FORCE FRESH BUILD
+# BUILD VERSION 7 - 2025-12-22 - FORCE FRESH BUILD
 
 FROM python:3.11-slim
 
 # ============================================================
 # CACHE BUSTER - Change this value to force a fresh build
 # ============================================================
-ARG CACHE_BUST=v6_20241221_0930
+ARG CACHE_BUST=v7_20251222_001
 RUN echo "Build version: ${CACHE_BUST}"
 
 # Install system dependencies for video processing and ML libraries
@@ -79,4 +79,4 @@ EXPOSE 8000
 # - Default: run API (uvicorn)
 # - Worker service: set WORKER=1 to run the pipeline worker instead
 # ============================================================
-CMD ["sh", "-c", "if [ \"${WORKER:-0}\" = \"1\" ]; then echo \"🚀 Starting Pipeline Worker...\"; python -m app.workers.pipeline; else echo \"🚀 Starting API...\"; uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}; fi"]
+CMD ["sh", "-c", "echo \"🔧 Entrypoint: WORKER=${WORKER:-unset} PORT=${PORT:-unset}\"; if [ \"${WORKER:-0}\" = \"1\" ]; then echo \"🚀 Starting Pipeline Worker...\"; python -m app.workers.pipeline; else echo \"🚀 Starting API...\"; uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}; fi"]

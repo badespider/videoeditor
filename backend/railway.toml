@@ -1,6 +1,8 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
+# Force fresh Docker builds (Railway can be sticky with cached images)
+dockerBuildArgs = ["CACHE_BUST=v7_20251222_001"]
 
 [deploy]
 numReplicas = 1
