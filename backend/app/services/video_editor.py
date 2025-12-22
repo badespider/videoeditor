@@ -127,13 +127,22 @@ class VideoEditorService:
             )
         return out
 
-    def _write_concat_file(self, paths: Iterable[str]) -> str:
-        fd, list_path = tempfile.mkstemp(prefix="concat_", suffix=".txt")
+    def _write_concat_file(self, paths: Iterable[str], *, dir_path: Optional[str] = None) -> str:
+        """
+        Write an ffmpeg concat-demuxer list file.
+
+        IMPORTANT:
+        - We always write ABSOLUTE paths because ffmpeg resolves relative paths relative to
+          the list file location (often /tmp), which can break when our work dir is elsewhere.
+        - Optionally place the list file in the same directory as the media segments.
+        """
+        fd, list_path = tempfile.mkstemp(prefix="concat_", suffix=".txt", dir=dir_path)
         os.close(fd)
         with open(list_path, "w", encoding="utf-8") as f:
             for p in paths:
                 # concat demuxer expects `file '...path...'`
-                escaped = p.replace("'", "'\\''")
+                abs_p = os.path.abspath(p)
+                escaped = abs_p.replace("'", "'\\''")
                 f.write(f"file '{escaped}'\n")
         return list_path
 
@@ -172,7 +181,7 @@ class VideoEditorService:
 
     def _concat_videos(self, *, video_paths: Sequence[str], output_path: str) -> None:
         os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-        list_path = self._write_concat_file(video_paths)
+        list_path = self._write_concat_file(video_paths, dir_path=os.path.dirname(os.path.abspath(output_path)) or None)
         try:
             # Re-encode to avoid codec/stream mismatch issues.
             run_ffmpeg_capture(
@@ -207,7 +216,7 @@ class VideoEditorService:
 
     def _concat_audios_to_m4a(self, *, audio_paths: Sequence[str], output_path: str) -> None:
         os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-        list_path = self._write_concat_file(audio_paths)
+        list_path = self._write_concat_file(audio_paths, dir_path=os.path.dirname(os.path.abspath(output_path)) or None)
         try:
             # Re-encode into AAC for stable muxing.
             run_ffmpeg_capture(
