@@ -270,6 +270,28 @@ class Settings(BaseSettings):
                 v = env.get(var)
                 return default if v is None else v
 
+            def get_bool(var: str) -> Any:
+                """
+                Parse a boolean-like env var value.
+                Returns None if missing or unparseable (caller should ignore).
+                """
+                if env.get(var) is None:
+                    return None
+                raw = get(var).strip().lower()
+                if raw in ("true", "1", "yes", "y", "on"):
+                    return True
+                if raw in ("false", "0", "no", "n", "off"):
+                    return False
+                return None
+
+            def get_int(var: str) -> Any:
+                if env.get(var) is None:
+                    return None
+                try:
+                    return int(get(var).strip())
+                except Exception:
+                    return None
+
             out: Dict[str, Any] = {}
 
             # Helper: set nested path in dict
@@ -348,7 +370,9 @@ class Settings(BaseSettings):
 
             # FFmpeg (legacy vars)
             if env.get("FFMPEG_THREADS") is not None:
-                set_path(("ffmpeg", "threads"), get("FFMPEG_THREADS"))
+                threads = get_int("FFMPEG_THREADS")
+                if threads is not None:
+                    set_path(("ffmpeg", "threads"), threads)
             if env.get("VIDEO_OUTPUT_FORMAT") is not None:
                 set_path(("ffmpeg", "video_output_format"), get("VIDEO_OUTPUT_FORMAT"))
             if env.get("VIDEO_CODEC") is not None:
@@ -360,25 +384,33 @@ class Settings(BaseSettings):
 
             # Features (legacy vars)
             if env.get("ENABLE_SCENE_MATCHER") is not None:
-                set_path(("features", "enable_scene_matcher"), get("ENABLE_SCENE_MATCHER"))
+                val = get_bool("ENABLE_SCENE_MATCHER")
+                if val is not None:
+                    set_path(("features", "enable_scene_matcher"), val)
             if env.get("SCENE_MATCHER_CONFIDENCE_THRESHOLD") is not None:
                 set_path(("features", "scene_matcher_confidence_threshold"), get("SCENE_MATCHER_CONFIDENCE_THRESHOLD"))
 
             if env.get("ENABLE_COPYRIGHT_PROTECTION") is not None:
-                set_path(("features", "enable_copyright_protection"), get("ENABLE_COPYRIGHT_PROTECTION"))
+                val = get_bool("ENABLE_COPYRIGHT_PROTECTION")
+                if val is not None:
+                    set_path(("features", "enable_copyright_protection"), val)
             if env.get("MAX_CLIP_DURATION") is not None:
                 set_path(("features", "max_clip_duration"), get("MAX_CLIP_DURATION"))
             if env.get("TRANSFORM_INTENSITY") is not None:
                 set_path(("features", "transform_intensity"), get("TRANSFORM_INTENSITY"))
 
             if env.get("ENABLE_CHARACTER_EXTRACTION") is not None:
-                set_path(("features", "enable_character_extraction"), get("ENABLE_CHARACTER_EXTRACTION"))
+                val = get_bool("ENABLE_CHARACTER_EXTRACTION")
+                if val is not None:
+                    set_path(("features", "enable_character_extraction"), val)
 
             # App (legacy vars)
             if env.get("APP_NAME") is not None:
                 set_path(("app", "app_name"), get("APP_NAME"))
             if env.get("DEBUG") is not None:
-                set_path(("app", "debug"), get("DEBUG"))
+                val = get_bool("DEBUG")
+                if val is not None:
+                    set_path(("app", "debug"), val)
             if env.get("LOG_LEVEL") is not None:
                 set_path(("app", "log_level"), get("LOG_LEVEL"))
             if env.get("CORS_ORIGINS") is not None:

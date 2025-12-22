@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import os
@@ -120,6 +120,10 @@ async def health_check():
 async def debug_config():
     """Debug endpoint to check configuration (remove in production)."""
     settings = get_settings()
+    # Safety: disable in production unless explicitly enabled.
+    enable_debug = bool(settings.app.debug) or (os.getenv("ENABLE_DEBUG_ENDPOINT", "").strip().lower() in ("true", "1", "yes"))
+    if not enable_debug:
+        raise HTTPException(status_code=404, detail="Not found")
     return {
         "minio": {
             "endpoint": settings.minio.endpoint,
