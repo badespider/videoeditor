@@ -34,11 +34,28 @@ export async function GET(
     }
 
     // Sync with backend if job is still processing
-    if (job.backendJobId && (job.status === "PENDING" || job.status === "PROCESSING")) {
+    if (job.backendJobId && (job.status === "PENDING" || job.status === "PROCESSING" || (job.status === "COMPLETED" && !job.outputVideoUrl))) {
       try {
         const backendResponse = await fetch(`${API_URL}/api/jobs/${job.backendJobId}`);
         if (backendResponse.ok) {
           const backendData = await backendResponse.json();
+
+          // IMPORTANT:
+          // Backend `/api/jobs/:id` returns JobProgress (status/progress/current_step),
+          // but DOES NOT include `output_url`. The `output_url` lives on `/api/jobs/:id/result`.
+          // If backend reports completed and we don't have output yet, fetch result to get the URL.
+          let outputUrlFromResult: string | null = null;
+          if (backendData.status === "completed") {
+            try {
+              const resultRes = await fetch(`${API_URL}/api/jobs/${job.backendJobId}/result`);
+              if (resultRes.ok) {
+                const resultData = await resultRes.json();
+                outputUrlFromResult = resultData.output_url || null;
+              }
+            } catch (e) {
+              console.error("Failed to fetch backend job result:", e);
+            }
+          }
           
           // Map backend status to our enum
           const statusMap: Record<string, "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED"> = {
@@ -51,7 +68,15 @@ export async function GET(
 
           // Update local record if status changed
           const newStatus = statusMap[backendData.status] || job.status;
-          if (newStatus !== job.status || backendData.progress !== job.progress) {
+          const mergedOutputUrl = outputUrlFromResult || backendData.output_url || job.outputVideoUrl;
+          const shouldUpdate =
+            newStatus !== job.status ||
+            backendData.progress !== job.progress ||
+            backendData.current_step !== job.currentStep ||
+            backendData.error_message !== job.errorMessage ||
+            (newStatus === "COMPLETED" && !!mergedOutputUrl && mergedOutputUrl !== job.outputVideoUrl);
+
+          if (shouldUpdate) {
             const updatedJob = await prisma.videoJob.update({
               where: { id: job.id },
               data: {
@@ -59,7 +84,7 @@ export async function GET(
                 progress: backendData.progress || job.progress,
                 currentStep: backendData.current_step || job.currentStep,
                 errorMessage: backendData.error_message || job.errorMessage,
-                outputVideoUrl: backendData.output_url || job.outputVideoUrl,
+                outputVideoUrl: mergedOutputUrl,
                 durationSeconds: backendData.duration_seconds || job.durationSeconds,
                 completedAt: backendData.completed_at ? new Date(backendData.completed_at) : job.completedAt,
               },
