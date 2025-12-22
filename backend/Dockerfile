@@ -74,6 +74,9 @@ RUN mkdir -p /app/temp/scenes /app/temp/audio /app/temp/frames
 
 EXPOSE 8000
 
-# Railway sets PORT env var - default to 8080 if not set
-# Using exec form with shell to expand PORT variable
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}
+# ============================================================
+# Entrypoint
+# - Default: run API (uvicorn)
+# - Worker service: set WORKER=1 to run the pipeline worker instead
+# ============================================================
+CMD ["sh", "-c", "if [ \"${WORKER:-0}\" = \"1\" ]; then echo \"🚀 Starting Pipeline Worker...\"; python -m app.workers.pipeline; else echo \"🚀 Starting API...\"; uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}; fi"]
