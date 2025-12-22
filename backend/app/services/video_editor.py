@@ -33,6 +33,21 @@ class VideoEditorService:
 
     def __init__(self) -> None:
         self.settings = get_settings()
+
+    def _require_file(self, path: str, *, label: str) -> None:
+        """
+        Guardrail: ensure an expected output file exists and is non-empty.
+        If not, raise FFmpegError with a clear message (this prevents confusing concat errors).
+        """
+        try:
+            if not os.path.exists(path):
+                raise FFmpegError(message=f"FFmpeg produced no {label} file: {path}")
+            if os.path.getsize(path) <= 0:
+                raise FFmpegError(message=f"FFmpeg produced empty {label} file: {path}")
+        except FFmpegError:
+            raise
+        except Exception as e:
+            raise FFmpegError(message=f"Failed to validate {label} file '{path}': {e}")
     
     def get_media_duration(self, path: str) -> float:
         """
@@ -153,6 +168,7 @@ class VideoEditorService:
             check=True,
             timeout=1200,
         )
+        self._require_file(output_path, label="stretched segment")
 
     def _concat_videos(self, *, video_paths: Sequence[str], output_path: str) -> None:
         os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
@@ -268,6 +284,7 @@ class VideoEditorService:
                 check=True,
                 timeout=1200,
             )
+            self._require_file(raw_seg, label="raw segment")
 
             # 2) Stretch raw segment to target duration
             stretched = os.path.join(work_dir, f"scene_{scene.id:04d}_stretched.mp4")
