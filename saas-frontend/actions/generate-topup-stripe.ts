@@ -8,7 +8,7 @@ import { absoluteUrl } from "@/lib/utils";
 
 const billingUrl = absoluteUrl("/dashboard/billing");
 
-export async function generateTopupStripe(priceId: string) {
+export async function generateTopupStripe(priceId: string, minutes: 60 | 120) {
   const session = await auth();
   const user = session?.user;
 
@@ -33,6 +33,8 @@ export async function generateTopupStripe(priceId: string) {
     metadata: {
       userId: user.id,
       kind: "topup",
+      // Safety: makes webhook crediting independent of price-id mapping.
+      minutes: String(minutes),
     },
   });
 

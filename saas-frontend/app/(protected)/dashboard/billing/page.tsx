@@ -113,7 +113,7 @@ export default async function BillingPage() {
                 if (!env.NEXT_PUBLIC_STRIPE_TOPUP_60_PRICE_ID) {
                   throw new Error("Missing NEXT_PUBLIC_STRIPE_TOPUP_60_PRICE_ID");
                 }
-                await generateTopupStripe(env.NEXT_PUBLIC_STRIPE_TOPUP_60_PRICE_ID);
+                await generateTopupStripe(env.NEXT_PUBLIC_STRIPE_TOPUP_60_PRICE_ID, 60);
               }}
             >
               <button className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground">
@@ -126,7 +126,7 @@ export default async function BillingPage() {
                 if (!env.NEXT_PUBLIC_STRIPE_TOPUP_120_PRICE_ID) {
                   throw new Error("Missing NEXT_PUBLIC_STRIPE_TOPUP_120_PRICE_ID");
                 }
-                await generateTopupStripe(env.NEXT_PUBLIC_STRIPE_TOPUP_120_PRICE_ID);
+                await generateTopupStripe(env.NEXT_PUBLIC_STRIPE_TOPUP_120_PRICE_ID, 120);
               }}
             >
               <button className="inline-flex h-10 items-center justify-center rounded-full border px-5 text-sm font-medium">

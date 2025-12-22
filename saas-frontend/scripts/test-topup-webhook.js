@@ -64,16 +64,10 @@ async function main() {
   const stripeKey = requireEnv("STRIPE_API_KEY");
   const webhookSecret = requireEnv("STRIPE_WEBHOOK_SECRET");
 
-  const priceId =
+  let priceId =
     process.env.TOPUP_PRICE_ID ||
     process.env.NEXT_PUBLIC_STRIPE_TOPUP_60_PRICE_ID ||
     null;
-
-  if (!priceId) {
-    throw new Error(
-      "Missing TOPUP_PRICE_ID or NEXT_PUBLIC_STRIPE_TOPUP_60_PRICE_ID. Set one to your Stripe test-mode price id."
-    );
-  }
 
   const webhookUrl =
     process.env.WEBHOOK_URL ||
@@ -93,7 +87,6 @@ async function main() {
   const stripe = new Stripe(stripeKey, { apiVersion: "2024-04-10" });
 
   console.log("🔧 Using webhook URL:", webhookUrl);
-  console.log("🔧 Using top-up price:", priceId);
   console.log("🔧 Using test email:", testEmail);
 
   // 1) Ensure a user exists.
@@ -108,6 +101,35 @@ async function main() {
   });
 
   console.log("✅ Test user:", user.id);
+
+  // 2) Ensure we have a valid Price ID in this Stripe account/mode.
+  // Many setups fail here because the Price ID is from another Stripe account or from live mode.
+  // If missing/invalid, create a test product+price automatically.
+  if (priceId) {
+    try {
+      await stripe.prices.retrieve(priceId);
+    } catch (e) {
+      console.warn(`⚠️ Provided Price ID not found in this Stripe account/mode: ${priceId}`);
+      priceId = null;
+    }
+  }
+
+  if (!priceId) {
+    console.log("🧪 Creating a temporary test Product + one-time Price in Stripe...");
+    const product = await stripe.products.create({
+      name: "Top-up Minutes (Test)",
+      metadata: { kind: "topup_test" },
+    });
+    const price = await stripe.prices.create({
+      product: product.id,
+      currency: "usd",
+      unit_amount: 500, // $5.00 test price (amount doesn’t matter for webhook test)
+    });
+    priceId = price.id;
+    console.log("✅ Created test Price:", priceId);
+  }
+
+  console.log("🔧 Using top-up price:", priceId);
 
   // 2) Create a checkout session (mode=payment) with metadata required by webhook handler.
   const session = await stripe.checkout.sessions.create({
@@ -149,14 +171,29 @@ async function main() {
   });
 
   // 4) POST to your webhook endpoint.
-  const res = await fetch(webhookUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Stripe-Signature": signature,
-    },
-    body: payload,
-  });
+  console.log("📤 Sending webhook to:", webhookUrl);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+  
+  let res;
+  try {
+    res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Stripe-Signature": signature,
+      },
+      body: payload,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+  } catch (fetchErr) {
+    clearTimeout(timeoutId);
+    if (fetchErr.name === 'AbortError') {
+      throw new Error(`Webhook request timed out after 30s. Is the dev server running at ${webhookUrl}?`);
+    }
+    throw new Error(`Webhook fetch failed: ${fetchErr.message}`);
+  }
 
   const text = await res.text();
   if (!res.ok) {

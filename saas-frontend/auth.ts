@@ -72,6 +72,9 @@ export const {
     },
   },
   // Explicit cookie configuration for production HTTPS
+  // NOTE: Do NOT force secure cookies in local HTTP development, otherwise
+  // OAuth/session cookies won't be set and sign-in will fail.
+  // (Google callback typically ends in /login?error=Configuration or PKCE/state errors.)
   cookies: {
     sessionToken: {
       name: `authjs.session-token`,
@@ -79,7 +82,7 @@ export const {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
       },
     },
     callbackUrl: {
@@ -88,7 +91,7 @@ export const {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
       },
     },
     csrfToken: {
@@ -97,7 +100,7 @@ export const {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
       },
     },
     // Nonce cookie - critical for OAuth verification
@@ -107,7 +110,7 @@ export const {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
       },
     },
   },

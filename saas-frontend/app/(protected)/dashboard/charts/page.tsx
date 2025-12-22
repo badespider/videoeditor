@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { UserRole } from "@prisma/client";
 
 import { getCurrentUser } from "@/lib/session";
 import { constructMetadata } from "@/lib/utils";
@@ -19,6 +20,9 @@ export default async function ChartsPage() {
 
   if (!user?.id) {
     redirect("/login");
+  }
+  if (user.role !== UserRole.ADMIN) {
+    redirect("/dashboard");
   }
 
   // Fetch real analytics data
