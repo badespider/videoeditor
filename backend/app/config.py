@@ -175,9 +175,9 @@ class FeaturesConfig(BaseModel):
 
     # Copyright Protection Configuration (enabled by default - experimental)
     # Splits clips into <3 second segments with visual transforms for copyright evasion
-    # Default OFF: upstream implementation is currently a compatibility shim.
-    # Can be enabled via ENABLE_COPYRIGHT_PROTECTION=true if desired.
-    enable_copyright_protection: bool = False
+    # Default ON: pipeline expects this to be enabled for the “protected scenes” stitch path.
+    # Can still be disabled via ENABLE_COPYRIGHT_PROTECTION=false if needed.
+    enable_copyright_protection: bool = True
     max_clip_duration: float = 2.5  # Max seconds per clip
     transform_intensity: str = "subtle"  # subtle, moderate, aggressive
 
