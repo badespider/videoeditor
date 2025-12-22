@@ -24,6 +24,7 @@ import json as _json
 from typing import List, Optional
 from pathlib import Path
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -173,6 +174,19 @@ class PipelineWorker:
             print("🔧 Defaulting FFMPEG_THREADS=1 for worker stability (override via env if needed)", flush=True)
 
         self.job_manager = JobManager()
+        # Log Redis connectivity + queue state once at startup (helps debug “stuck pending”).
+        try:
+            raw_url = self.settings.redis_url
+            parsed = urlparse(raw_url)
+            host = parsed.hostname or "unknown"
+            port = parsed.port or 6379
+            db = (parsed.path or "/0").lstrip("/") or "0"
+            print(f"🔧 Worker Redis: host={host} port={port} db={db}", flush=True)
+            q_std = int(self.job_manager.redis.llen(self.job_manager.queue_name))
+            q_pri = int(self.job_manager.redis.llen(self.job_manager.priority_queue_name))
+            print(f"🔧 Queue lengths: priority={q_pri} standard={q_std}", flush=True)
+        except Exception as e:
+            print(f"⚠️ Worker Redis diagnostics failed: {e}", flush=True)
         self.storage = StorageService()
         self.memories_client = MemoriesAIClient()
         self.script_generator = ScriptGenerator()
@@ -752,6 +766,7 @@ class PipelineWorker:
     def run(self):
         """Main worker loop."""
         print("🚀 Pipeline worker started (Chapter-Based mode)", flush=True)
+        last_idle_log = 0.0
         
         while True:
             try:
@@ -762,6 +777,15 @@ class PipelineWorker:
                     asyncio.run(self.process_job(job_id))
                 else:
                     # No jobs, wait before polling again
+                    now = time.time()
+                    if now - last_idle_log >= 30:
+                        last_idle_log = now
+                        try:
+                            q_std = int(self.job_manager.redis.llen(self.job_manager.queue_name))
+                            q_pri = int(self.job_manager.redis.llen(self.job_manager.priority_queue_name))
+                            print(f"⏳ No jobs picked up. Queue lengths: priority={q_pri} standard={q_std}", flush=True)
+                        except Exception:
+                            pass
                     time.sleep(2)
                     
             except KeyboardInterrupt:
