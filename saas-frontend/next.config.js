@@ -39,11 +39,6 @@ const nextConfig = {
   compress: true,
   // Enable powered-by header removal for security
   poweredByHeader: false,
-  // Experimental optimizations
-  experimental: {
-    // Optimize CSS loading
-    optimizeCss: true,
-  },
 };
 
 module.exports = withContentlayer(nextConfig);
