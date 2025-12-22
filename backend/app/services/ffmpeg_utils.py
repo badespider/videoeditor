@@ -15,6 +15,8 @@ class FFmpegError(Exception):
     """
     message: str
     stderr: str = ""
+    stdout: str = ""
+    returncode: Optional[int] = None
     cmd: Optional[list[str]] = None
 
     def __str__(self) -> str:
@@ -97,6 +99,55 @@ def _inject_nostdin(cmd: Sequence[str]) -> list[str]:
     return cmd_list
 
 
+def _inject_threads(cmd_list: list[str]) -> list[str]:
+    """
+    Best-effort: limit ffmpeg thread usage to reduce OOM risk in constrained containers.
+    Controlled via env var FFMPEG_THREADS.
+    """
+    if not cmd_list:
+        return cmd_list
+
+    base = os.path.basename(str(cmd_list[0])).lower()
+    if base not in {"ffmpeg", "ffmpeg.exe"}:
+        return cmd_list
+
+    if "-threads" in cmd_list:
+        return cmd_list
+
+    raw = os.getenv("FFMPEG_THREADS")
+    if not raw:
+        return cmd_list
+
+    try:
+        threads = int(raw)
+    except Exception:
+        return cmd_list
+
+    if threads <= 0:
+        return cmd_list
+
+    # Insert right after -nostdin if present; otherwise right after ffmpeg.
+    try:
+        idx = cmd_list.index("-nostdin") + 1
+    except ValueError:
+        idx = 1
+
+    cmd_list[idx:idx] = ["-threads", str(threads)]
+    return cmd_list
+
+
+def _tail_text(s: str, *, max_lines: int = 25, max_chars: int = 4000) -> str:
+    if not s:
+        return ""
+    t = s.replace("\r\n", "\n").replace("\r", "\n")
+    lines = [ln for ln in t.split("\n") if ln.strip()]
+    tail = lines[-max_lines:] if len(lines) > max_lines else lines
+    out = "\n".join(tail).strip()
+    if len(out) > max_chars:
+        out = out[-max_chars:]
+    return out
+
+
 def run_ffmpeg_capture(
     cmd: Sequence[str],
     *,
@@ -111,6 +162,7 @@ def run_ffmpeg_capture(
     - optionally raise FFmpegError with sanitized stderr
     """
     cmd_list = _inject_nostdin(cmd)
+    cmd_list = _inject_threads(cmd_list)
 
     try:
         proc = subprocess.run(
@@ -129,9 +181,31 @@ def run_ffmpeg_capture(
         )
 
     if check and proc.returncode != 0:
+        stderr = proc.stderr or ""
+        stdout = proc.stdout or ""
+        rc = proc.returncode
+
+        # Common container failure mode: ffmpeg gets SIGKILL (OOM) → no stderr.
+        # Linux SIGKILL usually maps to 137. Python may also report -9.
+        likely_oom = rc in (137, -9)
+        if not stderr:
+            extra = "Likely out of memory in the worker container." if likely_oom else "No stderr captured."
+            msg = (
+                f"FFmpeg failed (exit {rc}). {extra}\n"
+                f"Tip: try a smaller video, increase worker RAM, or set FFMPEG_THREADS=1.\n"
+            )
+            if stdout:
+                msg += f"FFmpeg stdout (tail):\n{_tail_text(stdout)}"
+            else:
+                msg += "FFmpeg stdout was empty."
+        else:
+            msg = f"FFmpeg failed (exit {rc}):\n{sanitize_ffmpeg_stderr(stderr)}"
+
         raise FFmpegError(
-            message=f"FFmpeg failed:\n{sanitize_ffmpeg_stderr(proc.stderr)}",
-            stderr=proc.stderr or "",
+            message=msg,
+            stderr=stderr,
+            stdout=stdout,
+            returncode=rc,
             cmd=cmd_list,
         )
 

@@ -2087,8 +2087,14 @@ class PipelineWorker:
             # Surface sanitized error to job; keep full stderr in logs.
             error_msg = str(e)
             print(f"❌ Job {job_id} failed (FFmpeg): {error_msg}", flush=True)
+            if getattr(e, "returncode", None) is not None:
+                print(f"--- FFmpeg return code ---\n{e.returncode}\n--- end ffmpeg return code ---", flush=True)
+            if getattr(e, "cmd", None):
+                print(f"--- FFmpeg cmd ---\n{e.cmd}\n--- end ffmpeg cmd ---", flush=True)
             if getattr(e, "stderr", None):
                 print(f"--- FFmpeg stderr (full) ---\n{e.stderr}\n--- end ffmpeg stderr ---", flush=True)
+            if (not getattr(e, "stderr", None)) and getattr(e, "stdout", None):
+                print(f"--- FFmpeg stdout (tail) ---\n{e.stdout[-4000:]}\n--- end ffmpeg stdout ---", flush=True)
             tb.print_exc()
             
             self.job_manager.fail_job_if_not_completed(

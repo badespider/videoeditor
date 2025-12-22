@@ -33,14 +33,14 @@ class VideoEditorService:
 
     def __init__(self) -> None:
         self.settings = get_settings()
-
+    
     def get_media_duration(self, path: str) -> float:
         """
         Return media duration in seconds using ffprobe.
         """
         if not path:
             return 0.0
-
+    
         proc = run_ffprobe_capture(
             [
                 "ffprobe",
@@ -161,8 +161,8 @@ class VideoEditorService:
             # Re-encode to avoid codec/stream mismatch issues.
             run_ffmpeg_capture(
                 [
-                    "ffmpeg",
-                    "-y",
+            "ffmpeg",
+            "-y",
                     "-v",
                     "error",
                     "-f",
@@ -336,7 +336,7 @@ class VideoEditorService:
         import asyncio
 
         asyncio.run(self.stitch_elastic(source_video=source_video, scenes=scenes, output_path=output_path))
-
+    
     def apply_post_transforms(
         self,
         input_path: str,
@@ -354,8 +354,8 @@ class VideoEditorService:
         vf = f"eq=brightness={brightness-1.0}:saturation={saturation}:contrast={contrast},hue=h={hue_shift}"
         run_ffmpeg_capture(
             [
-                "ffmpeg",
-                "-y",
+            "ffmpeg",
+            "-y",
                 "-v",
                 "error",
                 "-i",
