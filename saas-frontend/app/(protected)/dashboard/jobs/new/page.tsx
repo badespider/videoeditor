@@ -41,7 +41,9 @@ interface UsageData {
   topUpMinutesRemaining: number;
   totalAvailableMinutes: number;
   percentUsed: number;
-  isPaid: boolean;
+  remainingMinutes: number;
+  canProcess: boolean;
+  hasSubscription: boolean;
 }
 
 // File drop zone component
@@ -141,8 +143,8 @@ export default function NewJobPage() {
   }, []);
   
   // Calculate if user can upload based on quota
-  const canUpload = usage?.isPaid && (usage.totalAvailableMinutes - usage.minutesUsed) > 0;
   const remainingMinutes = usage ? Math.max(0, usage.totalAvailableMinutes - usage.minutesUsed) : 0;
+  const canUpload = remainingMinutes > 0;
 
   const handleVideosDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -477,20 +479,20 @@ export default function NewJobPage() {
             )}
 
             {/* Quota Warning/Error */}
-            {!loadingUsage && usage && !usage.isPaid && (
+            {!loadingUsage && usage && !usage.canProcess && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>No Active Plan</AlertTitle>
+                <AlertTitle>No Minutes Available</AlertTitle>
                 <AlertDescription>
-                  You need an active subscription to process videos.{" "}
+                  You need minutes to process videos.{" "}
                   <Link href="/dashboard/billing" className="underline font-medium">
-                    Upgrade now
+                    Get minutes
                   </Link>
                 </AlertDescription>
               </Alert>
             )}
 
-            {!loadingUsage && usage && usage.isPaid && remainingMinutes <= 0 && (
+            {!loadingUsage && usage && usage.canProcess && remainingMinutes <= 0 && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Quota Exceeded</AlertTitle>
@@ -504,7 +506,7 @@ export default function NewJobPage() {
               </Alert>
             )}
 
-            {!loadingUsage && usage && usage.isPaid && remainingMinutes > 0 && remainingMinutes < 10 && (
+            {!loadingUsage && usage && usage.canProcess && remainingMinutes > 0 && remainingMinutes < 10 && (
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Low Quota</AlertTitle>
@@ -551,7 +553,7 @@ export default function NewJobPage() {
 
                 {!canUpload && !loadingUsage && (
                   <p className="text-center text-sm text-destructive mt-4">
-                    Upgrade your plan or buy a top-up to process videos
+                    Buy minutes to process videos
                   </p>
                 )}
               </CardContent>

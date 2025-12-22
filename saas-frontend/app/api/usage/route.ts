@@ -22,6 +22,9 @@ export async function GET() {
       getUserSubscriptionPlan(session.user.id),
     ]);
 
+    const remainingMinutes = Math.max(0, usage.totalAvailableMinutes - usage.minutesUsed);
+    const canProcess = remainingMinutes > 0;
+
     return NextResponse.json({
       minutesUsed: usage.minutesUsed,
       minutesLimit: usage.minutesLimit,
@@ -29,7 +32,10 @@ export async function GET() {
       totalAvailableMinutes: usage.totalAvailableMinutes,
       percentUsed: usage.percentUsed,
       billingPeriod: usage.billingPeriod,
-      isPaid: subscription.isPaid,
+      remainingMinutes,
+      // "canProcess" is the true gate for uploads: subscription minutes OR top-ups.
+      canProcess,
+      hasSubscription: subscription.isPaid,
       planTier: subscription.title?.toLowerCase() || "none",
     });
   } catch (error) {

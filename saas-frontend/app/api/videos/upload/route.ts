@@ -35,15 +35,18 @@ export async function POST(request: NextRequest) {
       getCurrentUsage(session.user.id),
     ]);
 
-    // Check if user has an active paid subscription
-    if (!subscriptionPlan?.isPaid) {
+    // Gate uploads by available minutes (subscription minutes OR top-ups).
+    // If user has 0 minutes total, treat as payment required.
+    if (usage.totalAvailableMinutes <= 0) {
       return NextResponse.json(
         {
           error: "payment_required",
-          message: "You need an active subscription to process videos. Please upgrade your plan.",
+          message: "You need minutes to process videos. Please buy minutes or subscribe.",
           details: {
-            isPaid: false,
-            planTier: "none",
+            totalAvailableMinutes: usage.totalAvailableMinutes,
+            minutesUsed: usage.minutesUsed,
+            minutesLimit: usage.minutesLimit,
+            topUpMinutesRemaining: usage.topUpMinutesRemaining,
           },
         },
         { status: 402 },
@@ -69,8 +72,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine plan tier
-    const planTier = subscriptionPlan.title?.toLowerCase() || "none";
-    const isPriority = planTier === "studio";
+    const subscriptionTier = subscriptionPlan.title?.toLowerCase() || "none";
+    const planTier = subscriptionPlan.isPaid ? subscriptionTier : "topup";
+    const isPriority = subscriptionPlan.isPaid && subscriptionTier === "studio";
 
     // Get the form data from the request
     const formData = await request.formData();
@@ -86,7 +90,9 @@ export async function POST(request: NextRequest) {
         minutes_limit: usage.minutesLimit,
         minutes_used: usage.minutesUsed,
         minutes_remaining: remainingMinutes,
-        is_paid: subscriptionPlan.isPaid,
+        // "is_paid" is used by the backend gate; treat "has minutes" as paid access.
+        // (true for subscription minutes or top-ups)
+        is_paid: remainingMinutes > 0,
       },
       JWT_SECRET,
       { expiresIn: "1h" }

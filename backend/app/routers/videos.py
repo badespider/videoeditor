@@ -42,24 +42,21 @@ async def upload_video(
     # ========== SUBSCRIPTION VALIDATION ==========
     # If user is authenticated, validate their subscription and quota
     if user:
-        # Check if user has an active paid subscription
-        if not user.is_paid:
-            raise HTTPException(
-                status_code=402,
-                detail={
-                    "error": "payment_required",
-                    "message": "You need an active subscription to process videos. Please upgrade your plan.",
-                    "plan_tier": user.plan_tier,
-                }
-            )
-        
-        # Check if user has remaining quota
+        # Check if user has remaining quota (subscription minutes OR top-ups).
         if not user.has_quota:
+            # If they have no minutes at all, treat as payment required.
+            error_type = "payment_required" if user.minutes_limit <= 0 and user.minutes_remaining <= 0 else "quota_exceeded"
+            message = (
+                "You need minutes to process videos. Please buy minutes or subscribe."
+                if error_type == "payment_required"
+                else f"You've used all {user.minutes_limit} minutes for this billing period. Purchase a top-up or wait for your quota to reset."
+            )
             raise HTTPException(
                 status_code=402,
                 detail={
-                    "error": "quota_exceeded",
-                    "message": f"You've used all {user.minutes_limit} minutes for this billing period. Purchase a top-up or wait for your quota to reset.",
+                    "error": error_type,
+                    "message": message,
+                    "plan_tier": user.plan_tier,
                     "minutes_used": user.minutes_used,
                     "minutes_limit": user.minutes_limit,
                     "minutes_remaining": user.minutes_remaining,

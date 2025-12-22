@@ -44,7 +44,8 @@ class AuthenticatedUser:
     @property
     def has_quota(self) -> bool:
         """Check if user has remaining processing quota."""
-        return self.is_paid and self.minutes_remaining > 0
+        # Minutes can come from subscription OR top-ups; don't require "is_paid".
+        return self.minutes_remaining > 0
     
     @property
     def is_priority(self) -> bool:
