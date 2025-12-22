@@ -74,6 +74,8 @@ def verify_jwt_token(token: str) -> dict:
     """
     try:
         secret = get_jwt_secret()
+        settings = get_settings()
+        algorithm = (settings.jwt.algorithm or "HS256").strip()
         
         # NextAuth tokens are signed with the AUTH_SECRET
         # They may be encrypted (JWE) or just signed (JWS)
@@ -81,7 +83,7 @@ def verify_jwt_token(token: str) -> dict:
         payload = jwt.decode(
             token,
             secret,
-            algorithms=["HS256"],
+            algorithms=[algorithm],
             options={
                 "verify_signature": True,
                 "verify_exp": True,

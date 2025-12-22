@@ -80,6 +80,37 @@ class ProcessingConfig(BaseModel):
     video_speed_max: float = 2.0      # Maximum speed multiplier
     
 
+class AgentPlanningConfig(BaseModel):
+    planning_timeout_seconds: int = 300
+    max_storyboard_scenes: int = 50
+
+
+class AgentRetrievalConfig(BaseModel):
+    retrieval_batch_size: int = 10
+    clip_cache_size_gb: float = 5.0
+
+
+class AgentRenderingConfig(BaseModel):
+    render_timeout_seconds: int = 1800
+    max_concurrent_renders: int = 2
+
+
+class AgentsConfig(BaseModel):
+    planning: AgentPlanningConfig = Field(default_factory=AgentPlanningConfig)
+    retrieval: AgentRetrievalConfig = Field(default_factory=AgentRetrievalConfig)
+    rendering: AgentRenderingConfig = Field(default_factory=AgentRenderingConfig)
+
+
+class JwtConfig(BaseModel):
+    """
+    JWT verification settings for backend.
+
+    Our frontend (NextAuth/Auth.js) typically uses HS256 for signed JWTs.
+    """
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60
+
+
 class VectorMatchingConfig(BaseModel):
     """Configuration for vector-based script-to-clip matching."""
     enable_vector_matching: bool = True
@@ -224,6 +255,8 @@ class Settings(BaseSettings):
     storage: StorageConfig = Field(default_factory=StorageConfig)
     ffmpeg: FFmpegConfig = Field(default_factory=FFmpegConfig)
     processing: ProcessingConfig = Field(default_factory=ProcessingConfig)
+    agents: AgentsConfig = Field(default_factory=AgentsConfig)
+    jwt: JwtConfig = Field(default_factory=JwtConfig)
     features: FeaturesConfig = Field(default_factory=FeaturesConfig)
     app: AppConfig = Field(default_factory=AppConfig)
     webhook: WebhookConfig = Field(default_factory=WebhookConfig)
@@ -289,6 +322,14 @@ class Settings(BaseSettings):
                     return None
                 try:
                     return int(get(var).strip())
+                except Exception:
+                    return None
+
+            def get_float(var: str) -> Any:
+                if env.get(var) is None:
+                    return None
+                try:
+                    return float(get(var).strip())
                 except Exception:
                     return None
 
@@ -403,6 +444,42 @@ class Settings(BaseSettings):
                 val = get_bool("ENABLE_CHARACTER_EXTRACTION")
                 if val is not None:
                     set_path(("features", "enable_character_extraction"), val)
+
+            # Agents (legacy vars)
+            if env.get("PLANNING_TIMEOUT_SECONDS") is not None:
+                v = get_int("PLANNING_TIMEOUT_SECONDS")
+                if v is not None:
+                    set_path(("agents", "planning", "planning_timeout_seconds"), v)
+            if env.get("MAX_STORYBOARD_SCENES") is not None:
+                v = get_int("MAX_STORYBOARD_SCENES")
+                if v is not None:
+                    set_path(("agents", "planning", "max_storyboard_scenes"), v)
+
+            if env.get("RETRIEVAL_BATCH_SIZE") is not None:
+                v = get_int("RETRIEVAL_BATCH_SIZE")
+                if v is not None:
+                    set_path(("agents", "retrieval", "retrieval_batch_size"), v)
+            if env.get("CLIP_CACHE_SIZE_GB") is not None:
+                v = get_float("CLIP_CACHE_SIZE_GB")
+                if v is not None:
+                    set_path(("agents", "retrieval", "clip_cache_size_gb"), v)
+
+            if env.get("RENDER_TIMEOUT_SECONDS") is not None:
+                v = get_int("RENDER_TIMEOUT_SECONDS")
+                if v is not None:
+                    set_path(("agents", "rendering", "render_timeout_seconds"), v)
+            if env.get("MAX_CONCURRENT_RENDERS") is not None:
+                v = get_int("MAX_CONCURRENT_RENDERS")
+                if v is not None:
+                    set_path(("agents", "rendering", "max_concurrent_renders"), v)
+
+            # JWT (legacy vars)
+            if env.get("ALGORITHM") is not None:
+                set_path(("jwt", "algorithm"), get("ALGORITHM"))
+            if env.get("ACCESS_TOKEN_EXPIRE_MINUTES") is not None:
+                v = get_int("ACCESS_TOKEN_EXPIRE_MINUTES")
+                if v is not None:
+                    set_path(("jwt", "access_token_expire_minutes"), v)
 
             # App (legacy vars)
             if env.get("APP_NAME") is not None:
