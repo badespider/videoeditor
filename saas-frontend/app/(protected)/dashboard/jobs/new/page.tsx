@@ -44,6 +44,7 @@ interface UsageData {
   remainingMinutes: number;
   canProcess: boolean;
   hasSubscription: boolean;
+  planTier?: string;
 }
 
 // File drop zone component
@@ -173,6 +174,22 @@ export default function NewJobPage() {
     setUploadProgress(0);
 
     try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiBase) {
+        throw new Error("Missing NEXT_PUBLIC_API_URL");
+      }
+
+      // Get a short-lived backend JWT (small request to Vercel).
+      const tokenRes = await fetch("/api/backend/token");
+      if (!tokenRes.ok) {
+        const err = await tokenRes.json().catch(() => ({}));
+        throw new Error(err?.message || "Unable to authorize upload");
+      }
+      const { token: backendToken } = (await tokenRes.json()) as { token: string };
+      if (!backendToken) {
+        throw new Error("Missing backend token");
+      }
+
       const formData = new FormData();
       formData.append("file", videoFile);
       if (scriptFile) {
@@ -200,7 +217,7 @@ export default function NewJobPage() {
         }
       });
 
-      const response = await new Promise<{ job_id: string; quota?: { minutesRemaining: number } }>((resolve, reject) => {
+      const response = await new Promise<{ job_id: string; video_id: string; message?: string }>((resolve, reject) => {
         xhr.addEventListener("load", () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve(JSON.parse(xhr.responseText));
@@ -222,19 +239,29 @@ export default function NewJobPage() {
         });
         xhr.addEventListener("error", () => reject(new Error("Upload failed - network error")));
         
-        xhr.open("POST", "/api/videos/upload");
+        // IMPORTANT: upload directly to backend to avoid Vercel function payload limits.
+        xhr.open("POST", `${apiBase}/api/videos/upload`);
+        xhr.setRequestHeader("Authorization", `Bearer ${backendToken}`);
         xhr.send(formData);
       });
 
-      // Show success with remaining quota info
-      const remaining = response.quota?.minutesRemaining;
-      if (remaining !== undefined) {
-        toast.success(`Video uploaded! ${remaining.toFixed(1)} minutes remaining.`);
-      } else {
-        toast.success("Video uploaded! Processing will begin shortly.");
+      // Create local DB record for dashboard (small request to Vercel).
+      const importRes = await fetch("/api/jobs/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          backendJobId: response.job_id,
+          videoId: response.video_id,
+          title: title || videoFile.name.replace(/\.[^/.]+$/, ""),
+        }),
+      });
+      if (!importRes.ok) {
+        throw new Error("Upload succeeded but failed to create local job record");
       }
-      
-      router.push(`/dashboard/jobs/${response.job_id}`);
+      const imported = await importRes.json();
+
+      toast.success("Video uploaded! Processing will begin shortly.");
+      router.push(`/dashboard/jobs/${imported.job_id}`);
     } catch (error) {
       console.error("Upload error:", error);
       const message = error instanceof Error ? error.message : "Failed to upload video";

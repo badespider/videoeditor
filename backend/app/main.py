@@ -53,7 +53,15 @@ app = FastAPI(
 settings = get_settings()
 origins = [o.strip() for o in (settings.app.cors_origins or "").split(",") if o.strip()]
 if not origins:
-    origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    # Safe defaults for local dev + production frontend.
+    origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+        "https://app.videorecapai.com",
+        "https://www.videorecapai.com",
+    ]
 
 # Note: Wildcard + credentials is not valid CORS. If user sets '*', disable credentials.
 allow_credentials = True
