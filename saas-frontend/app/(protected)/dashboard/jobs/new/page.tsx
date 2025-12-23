@@ -517,14 +517,23 @@ export default function NewJobPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Used</span>
-                      <span>{usage.minutesUsed.toFixed(1)} / {usage.totalAvailableMinutes} min</span>
+                      <span>
+                        {usage.minutesUsed.toFixed(1)} / {usage.totalAvailableMinutes} min
+                      </span>
                     </div>
+
                     <Progress value={usage.percentUsed} className="h-2" />
+
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Remaining</span>
+                      <span className="font-medium">{remainingMinutes.toFixed(1)} min</span>
+                    </div>
+
                     <p className="text-xs text-muted-foreground">
-                      {remainingMinutes.toFixed(1)} minutes remaining this month
+                      Minutes are updated after processing completes.
                     </p>
                   </div>
                 </CardContent>
