@@ -7,7 +7,9 @@
 
 import { env } from "@/env.mjs";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === "production" ? "" : "http://localhost:8000");
 
 // Types
 export interface BackendJob {
@@ -54,6 +56,10 @@ class VideoEditorApiClient {
   private authToken?: string;
 
   constructor(baseUrl: string = API_BASE_URL) {
+    if (process.env.NODE_ENV === "production" && !baseUrl) {
+      // Fail fast in production if the backend URL isn't configured.
+      throw new Error("Missing NEXT_PUBLIC_API_URL in production");
+    }
     this.baseUrl = baseUrl;
   }
 

@@ -8,10 +8,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+function getApiUrl() {
+  const url =
+    process.env.NEXT_PUBLIC_API_URL ||
+    (process.env.NODE_ENV === "production" ? "" : "http://localhost:8000");
+  if (process.env.NODE_ENV === "production" && !url) {
+    throw new Error("Missing NEXT_PUBLIC_API_URL");
+  }
+  return url;
+}
 
 export async function GET(request: NextRequest) {
   try {
+    const API_URL = getApiUrl();
     const session = await auth();
     
     if (!session?.user?.id) {
@@ -53,6 +62,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const API_URL = getApiUrl();
     const session = await auth();
     
     if (!session?.user?.id) {

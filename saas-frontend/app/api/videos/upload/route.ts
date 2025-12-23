@@ -12,7 +12,6 @@ import { getUserSubscriptionPlan } from "@/lib/subscription";
 import { getCurrentUsage, hasRemainingQuota } from "@/lib/api/usage-service";
 import { sign } from "jsonwebtoken";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const JWT_SECRET = process.env.AUTH_SECRET || "";
 
 // Plan limits in minutes
@@ -21,8 +20,19 @@ const PLAN_LIMITS: Record<string, number> = {
   studio: 180,
 };
 
+function getApiUrl() {
+  const url =
+    process.env.NEXT_PUBLIC_API_URL ||
+    (process.env.NODE_ENV === "production" ? "" : "http://localhost:8000");
+  if (process.env.NODE_ENV === "production" && !url) {
+    throw new Error("Missing NEXT_PUBLIC_API_URL");
+  }
+  return url;
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const API_URL = getApiUrl();
     const session = await auth();
     
     if (!session?.user?.id) {

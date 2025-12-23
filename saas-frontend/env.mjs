@@ -60,3 +60,24 @@ export const env = createEnv({
       process.env.NEXT_PUBLIC_STRIPE_TOPUP_120_PRICE_ID,
   },
 });
+
+// Production safety checks (helps avoid accidental HTTP/mixed-content and wrong canonicals)
+if (process.env.NODE_ENV === "production") {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const isLocalHttp =
+    appUrl?.startsWith("http://localhost") || appUrl?.startsWith("http://127.0.0.1");
+  if (appUrl?.startsWith("http://") && !isLocalHttp) {
+    throw new Error(
+      "NEXT_PUBLIC_APP_URL must use https:// in production (set it to https://app.videorecapai.com)",
+    );
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const isLocalSiteHttp =
+    siteUrl?.startsWith("http://localhost") || siteUrl?.startsWith("http://127.0.0.1");
+  if (siteUrl && siteUrl.startsWith("http://") && !isLocalSiteHttp) {
+    throw new Error(
+      "NEXT_PUBLIC_SITE_URL must use https:// in production (set it to https://www.videorecapai.com)",
+    );
+  }
+}

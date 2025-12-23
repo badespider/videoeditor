@@ -12,7 +12,7 @@ import { FaqSchema } from "@/components/seo/faq-schema";
 export const metadata = constructMetadata({
   title: "Video Recap AI – Anime & Movie Recap Automation",
   description:
-    "Video Recap AI helps recap creators publish faster for anime and movies: generate a structured recap script, voiceover, and suggested clip map—with optional copyright-safe editing patterns to reduce claims/blocks.",
+    "Publish anime & movie recaps faster with AI: structured script, voiceover, and a clip map—plus optional copyright-safe editing patterns to reduce claim risk.",
   pathname: "/",
 });
 

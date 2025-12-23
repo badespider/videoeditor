@@ -1,7 +1,31 @@
 import { SidebarNavItem, SiteConfig } from "types";
 import { env } from "@/env.mjs";
 
-const site_url = env.NEXT_PUBLIC_SITE_URL ?? env.NEXT_PUBLIC_APP_URL;
+function normalizeBaseUrl(raw: string) {
+  let url = raw.trim();
+  // Add scheme if missing (e.g. "www.videorecapai.com")
+  if (!/^https?:\/\//i.test(url)) {
+    url = `https://${url}`;
+  }
+  // Force HTTPS (prevents canonical/OG/sitemap emitting http:// which can trigger SEO+security warnings)
+  url = url.replace(/^http:\/\//i, "https://");
+  // Strip trailing slash
+  url = url.replace(/\/$/, "");
+  return url;
+}
+
+const site_url = normalizeBaseUrl(
+  env.NEXT_PUBLIC_SITE_URL ?? env.NEXT_PUBLIC_APP_URL,
+);
+
+if (process.env.NODE_ENV === "production") {
+  // SEO canonical should be the marketing domain in prod.
+  if (!env.NEXT_PUBLIC_SITE_URL) {
+    console.warn(
+      "[site] NEXT_PUBLIC_SITE_URL is not set in production; canonical URLs may be incorrect.",
+    );
+  }
+}
 
 export const siteConfig: SiteConfig = {
   name: "Video Recap AI",
