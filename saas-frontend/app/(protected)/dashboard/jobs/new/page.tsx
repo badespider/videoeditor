@@ -354,7 +354,10 @@ export default function NewJobPage() {
                   <span className="text-xs font-normal text-muted-foreground">(Optional)</span>
                 </CardTitle>
                 <CardDescription>
-                  Upload a custom script for the AI to narrate. If not provided, the AI will generate one automatically.
+                  Upload a custom script for the AI to narrate. If you don&apos;t provide one, the AI will generate a script automatically.
+                  <span className="block mt-1">
+                    Tip: Providing your own script usually improves story clarity, pacing, and final results.
+                  </span>
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -614,7 +617,7 @@ export default function NewJobPage() {
               <CardContent className="pt-6">
                 <h4 className="font-medium mb-2">Processing Info</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Processing typically takes 5-15 minutes</li>
+                  <li>• Processing time depends on video length and queue load (long videos can take 1 hour+)</li>
                   <li>• You&apos;ll be notified when complete</li>
                   <li>• Videos are stored securely</li>
                 </ul>
