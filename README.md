@@ -30,11 +30,7 @@ An automated video recap generator that uses AI to create narrated summaries of 
 
 Your existing `.env` file already has the required configuration! The pipeline uses these variables from your `.env`:
 
-```env
-# Already configured in your .env:
-MEMORIES_AI_API_KEY=sk-69e29216602ef29bd284a049d85c6e25
-MEMORIES_AI_BASE_URL=https://api.memories.ai
-ELEVENLABS_API_KEY=sk_54f0169abb7fc4c69a285296fcb8d03775dfd93b6a5b61de
+``
 
 # Redis (already configured)
 REDIS_HOST=localhost
