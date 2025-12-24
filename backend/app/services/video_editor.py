@@ -9,6 +9,49 @@ from app.config import get_settings
 from app.services.ffmpeg_utils import run_ffmpeg_capture, run_ffprobe_capture, FFmpegError, sanitize_ffmpeg_stderr
 
 
+def decide_video_time_adjustment(
+    *,
+    src_duration: float,
+    target_duration: float,
+    # Guardrails: we never want noticeable "chipmunk / sped-up recap" artifacts.
+    # If narration is shorter than the selected clip, prefer trimming visuals rather than speeding them up.
+    allow_speedup: bool = False,
+    max_slowdown_factor: float = 1.35,
+    epsilon_ratio: float = 0.02,
+) -> tuple[str, float | None]:
+    """
+    Decide how to align a video segment duration to a target duration.
+
+    Returns:
+      (mode, factor)
+        - mode == "none": durations are close enough; no time adjustment needed
+        - mode == "trim": keep natural speed, just shorten the segment to target_duration
+        - mode == "setpts": time-stretch using setpts; factor is the setpts multiplier
+
+    Notes:
+      - setpts factor > 1 slows down; < 1 speeds up.
+      - We default to *not* allowing speed-up, because it looks unnatural and is the #1 complaint.
+    """
+    src = float(src_duration)
+    tgt = float(target_duration)
+    if src <= 0 or tgt <= 0:
+        raise ValueError("Invalid durations for time alignment")
+
+    ratio = tgt / src  # <1 = shorter target; >1 = longer target
+    if abs(1.0 - ratio) <= float(epsilon_ratio):
+        return ("none", None)
+
+    if ratio < 1.0:
+        # Target is shorter than source.
+        if allow_speedup:
+            return ("setpts", max(0.1, min(10.0, ratio)))
+        return ("trim", None)
+
+    # ratio > 1.0 : target longer than source => slow down (or later we could add freeze/loop logic).
+    factor = max(1.0, min(float(max_slowdown_factor), ratio))
+    return ("setpts", factor)
+
+
 @dataclass
 class SceneSpec:
     """Internal normalized scene spec for stitching."""
@@ -151,32 +194,89 @@ class VideoEditorService:
         if src_dur <= 0 or target_duration <= 0:
             raise ValueError("Invalid durations for time-stretch")
 
-        # setpts factor: >1 slows down, <1 speeds up. Factor = target/src.
-        factor = max(0.1, min(10.0, target_duration / src_dur))
+        mode, factor = decide_video_time_adjustment(
+            src_duration=src_dur,
+            target_duration=target_duration,
+            allow_speedup=False,  # critical: avoid noticeable speed-up artifacts
+            max_slowdown_factor=1.35,
+            epsilon_ratio=0.02,
+        )
         os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
 
-        run_ffmpeg_capture(
-            [
-                "ffmpeg",
-                "-y",
-                "-v",
-                "error",
-                "-i",
-                input_path,
-                "-an",
-                "-vf",
-                f"setpts={factor}*PTS",
-                "-c:v",
-                self.settings.ffmpeg.video_codec,
-                "-b:v",
-                self.settings.ffmpeg.video_bitrate,
-                "-pix_fmt",
-                "yuv420p",
-                output_path,
-            ],
-            check=True,
-            timeout=1200,
-        )
+        if mode == "none":
+            # No timing changes needed; re-encode for consistency.
+            run_ffmpeg_capture(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-v",
+                    "error",
+                    "-i",
+                    input_path,
+                    "-an",
+                    "-c:v",
+                    self.settings.ffmpeg.video_codec,
+                    "-b:v",
+                    self.settings.ffmpeg.video_bitrate,
+                    "-pix_fmt",
+                    "yuv420p",
+                    output_path,
+                ],
+                check=True,
+                timeout=1200,
+            )
+        elif mode == "trim":
+            # Keep natural speed and shorten visuals to match narration.
+            # This prevents the "sped up" look when narration is shorter than the clip.
+            run_ffmpeg_capture(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-v",
+                    "error",
+                    "-i",
+                    input_path,
+                    "-an",
+                    "-t",
+                    str(float(target_duration)),
+                    "-c:v",
+                    self.settings.ffmpeg.video_codec,
+                    "-b:v",
+                    self.settings.ffmpeg.video_bitrate,
+                    "-pix_fmt",
+                    "yuv420p",
+                    output_path,
+                ],
+                check=True,
+                timeout=1200,
+            )
+        else:
+            # setpts factor: >1 slows down, <1 speeds up. Factor = target/src.
+            # We currently only enter this branch for slow-down (ratio > 1) by default.
+            if factor is None:
+                raise ValueError("Missing setpts factor")
+            run_ffmpeg_capture(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-v",
+                    "error",
+                    "-i",
+                    input_path,
+                    "-an",
+                    "-vf",
+                    f"setpts={float(factor)}*PTS",
+                    "-c:v",
+                    self.settings.ffmpeg.video_codec,
+                    "-b:v",
+                    self.settings.ffmpeg.video_bitrate,
+                    "-pix_fmt",
+                    "yuv420p",
+                    output_path,
+                ],
+                check=True,
+                timeout=1200,
+            )
         self._require_file(output_path, label="stretched segment")
 
     def _concat_videos(self, *, video_paths: Sequence[str], output_path: str) -> None:
