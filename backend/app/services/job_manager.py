@@ -343,6 +343,23 @@ class JobManager:
         job_data = self.get_job(job_id)
         if not job_data:
             return None
+
+        # IMPORTANT:
+        # The worker currently stores a presigned output URL (default 1 hour expiry) into Redis.
+        # If a user tries to download later, the URL can be expired (AccessDenied: Request has expired).
+        # Fix: for completed jobs, generate a fresh presigned URL on demand.
+        output_url = job_data.get("output_url")
+        try:
+            if job_data.get("status") == JobStatus.COMPLETED.value:
+                from app.services.storage import StorageService
+
+                storage = StorageService()
+                # Worker writes output to the output bucket at this canonical key.
+                output_object_name = f"{job_id}/final_recap.mp4"
+                output_url = storage.get_output_url(output_object_name, expires=3600)
+        except Exception:
+            # Best-effort fallback to stored URL if storage is unavailable.
+            output_url = job_data.get("output_url")
         
         scenes = [
             Scene(**s) for s in job_data.get("scenes", [])
@@ -352,7 +369,7 @@ class JobManager:
             job_id=job_data["job_id"],
             video_id=job_data["video_id"],
             status=JobStatus(job_data["status"]),
-            output_url=job_data.get("output_url"),
+            output_url=output_url,
             scenes=scenes,
             error_message=job_data.get("error_message")
         )

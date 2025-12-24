@@ -360,7 +360,7 @@ export default function JobDetailPage() {
             <CardContent className="space-y-4">
               {job.outputVideoUrl && (
                 <Button className="w-full" size="lg" asChild>
-                  <a href={job.outputVideoUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={`/api/jobs/${job.id}/download`} target="_blank" rel="noopener noreferrer">
                     <Download className="h-4 w-4 mr-2" />
                     Download Video
                   </a>
@@ -417,7 +417,7 @@ export default function JobDetailPage() {
             <CardContent>
               <div className="aspect-video bg-black rounded-lg overflow-hidden">
                 <video
-                  src={job.outputVideoUrl}
+                  src={`/api/jobs/${job.id}/download`}
                   controls
                   className="w-full h-full"
                   poster="/placeholder-video.jpg"
