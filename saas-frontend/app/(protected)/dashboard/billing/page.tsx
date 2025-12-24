@@ -136,24 +136,6 @@ export default async function BillingPage() {
           </CardContent>
         </Card>
 
-        {/* Stripe Test Mode Notice */}
-        <Alert className="!pl-14">
-          <Icons.warning />
-          <AlertTitle>Test Mode</AlertTitle>
-          <AlertDescription className="text-balance">
-            This app is using Stripe test environment. You can find a list of test card numbers on the{" "}
-            <a
-              href="https://stripe.com/docs/testing#cards"
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium underline underline-offset-8"
-            >
-              Stripe docs
-            </a>
-            .
-          </AlertDescription>
-        </Alert>
-
         {/* Billing Info */}
         <BillingInfo userSubscriptionPlan={userSubscriptionPlan} />
       </div>
