@@ -156,7 +156,7 @@ export function PricingCards({ userId, subscriptionPlan }: PricingCardsProps) {
         <HeaderSection
           label="Pricing"
           title="Paid plans (monthly minutes)"
-          subtitle="Minutes are the maximum processing time you can generate during the month. Need more? Buy rollover top-ups."
+          subtitle="Minutes are your monthly processing time. Need more? Buy rollover top-ups that carry over to future months."
         />
 
         {/* Monthly only for now */}

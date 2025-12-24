@@ -7,6 +7,8 @@ import { constructMetadata } from "@/lib/utils";
 import { ComparePlans } from "@/components/pricing/compare-plans";
 import { PricingCards } from "@/components/pricing/pricing-cards";
 import { PricingFaq } from "@/components/pricing/pricing-faq";
+import { ProductJsonLd } from "@/components/seo/jsonld";
+import { siteConfig } from "@/config/site";
 
 export const metadata = constructMetadata({
   title: "Pricing – Video Recap AI",
@@ -50,6 +52,10 @@ export default async function PricingPage() {
 
   return (
     <div className="flex w-full flex-col gap-16 py-8 md:py-8">
+      <ProductJsonLd
+        pageUrl={`${siteConfig.url}/pricing`}
+        description="Plans for video recap creators. Minutes-based pricing, with optional rollover top-ups for extra processing time."
+      />
       <PricingCards userId={user?.id} subscriptionPlan={subscriptionPlan} />
       <hr className="container" />
       <ComparePlans />

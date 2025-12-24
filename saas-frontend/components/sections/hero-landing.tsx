@@ -7,7 +7,7 @@ import { Icons } from "@/components/shared/icons";
 
 export default function HeroLanding() {
   return (
-    <section className="space-y-6 py-12 sm:py-20 lg:py-20">
+    <section id="top" className="space-y-6 py-12 sm:py-20 lg:py-20">
       <div className="container flex max-w-5xl flex-col items-center gap-5 text-center">
         <div
           className={cn(
@@ -30,7 +30,7 @@ export default function HeroLanding() {
           className="max-w-2xl text-balance leading-normal text-muted-foreground sm:text-xl sm:leading-8"
           style={{ animationDelay: "0.35s", animationFillMode: "forwards" }}
         >
-          Turn an episode or movie into a recap-ready package: structured script, voiceover, and a suggested clip map—plus optional copyright-safe editing patterns designed to reduce claims and blocks.
+          An AI video recap tool for anime and movie recap creators. Upload an episode or movie and get a recap-ready package: script, voiceover, and a clip map—with optional copyright-safe patterns.
         </p>
 
         <div

@@ -44,7 +44,8 @@ export const footerLinks: SidebarNavItem[] = [
   {
     title: "Company",
     items: [
-      { title: "About", href: "/docs" },
+      { title: "About", href: "/about" },
+      { title: "Contact", href: "/contact" },
       { title: "Terms", href: "/terms" },
       { title: "Privacy", href: "/privacy" },
     ],
