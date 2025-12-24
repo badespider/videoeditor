@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn, formatDate } from "@/lib/utils";
+import { siteConfig } from "@/config/site";
 import { UserSubscriptionPlan } from "types";
 
 interface BillingInfoProps extends React.HTMLAttributes<HTMLFormElement> {
@@ -50,7 +51,8 @@ export function BillingInfo({ userSubscriptionPlan }: BillingInfoProps) {
         {isPaid && stripeCustomerId ? (
           <CustomerPortalButton userStripeId={stripeCustomerId} />
         ) : (
-          <Link href="/pricing" className={cn(buttonVariants())}>
+          // Use absolute marketing URL so app.videorecapai.com middleware doesn't intercept /pricing
+          <Link href={`${siteConfig.url}/pricing`} className={cn(buttonVariants())}>
             Choose a plan
           </Link>
         )}
