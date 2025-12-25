@@ -127,20 +127,30 @@ export default function NewJobPage() {
   
   // Fetch usage data on mount
   useEffect(() => {
+    let mounted = true;
+
     async function fetchUsage() {
       try {
         const res = await fetch("/api/usage");
         if (res.ok) {
           const data = await res.json();
-          setUsage(data);
+          if (mounted) setUsage(data);
         }
       } catch (error) {
         console.error("Failed to fetch usage:", error);
       } finally {
-        setLoadingUsage(false);
+        if (mounted) setLoadingUsage(false);
       }
     }
     fetchUsage();
+
+    // Keep quota reasonably fresh (usage is recorded when jobs complete).
+    const id = window.setInterval(fetchUsage, 30_000);
+
+    return () => {
+      mounted = false;
+      window.clearInterval(id);
+    };
   }, []);
   
   // Calculate if user can upload based on quota

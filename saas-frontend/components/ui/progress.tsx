@@ -15,6 +15,9 @@ const Progress = React.forwardRef<
       "relative h-4 w-full overflow-hidden rounded-full bg-secondary",
       className
     )}
+    // Critical: pass value through so Radix renders a determinate progressbar.
+    // Without this, Radix sets data-state="indeterminate" even when we animate the indicator.
+    value={value ?? 0}
     {...props}
   >
     <ProgressPrimitive.Indicator
