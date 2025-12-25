@@ -63,6 +63,23 @@ if not origins:
         "https://www.videorecapai.com",
     ]
 
+# Safety: If CORS_ORIGINS is set incorrectly in production (common misconfig on Railway),
+# ensure our official origins are still allowed. This prevents uploads from failing with
+# opaque browser "network/CORS error" messages.
+#
+# We only add *our* domains + local dev, not a wildcard.
+if "*" not in origins:
+    required_origins = {
+        "https://app.videorecapai.com",
+        "https://videorecapai.com",
+        "https://www.videorecapai.com",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+    }
+    origins = sorted(set(origins).union(required_origins))
+
 # Note: Wildcard + credentials is not valid CORS. If user sets '*', disable credentials.
 allow_credentials = True
 if "*" in origins:
