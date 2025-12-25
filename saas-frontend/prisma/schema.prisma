@@ -141,6 +141,8 @@ model UsageRecord {
   createdAt       DateTime @default(now()) @map(name: "created_at")
   
   @@index([userId, billingPeriod])
+  // Idempotency: a given job should only record usage once per billing period.
+  @@unique([videoJobId, billingPeriod], map: "usage_records_video_job_id_billing_period_key")
   @@map(name: "usage_records")
 }
 

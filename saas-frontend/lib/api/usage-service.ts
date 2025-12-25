@@ -30,14 +30,32 @@ export async function recordUsage(
   const minutesUsed = durationSeconds / 60;
   const billingPeriod = getCurrentBillingPeriod();
 
-  await prisma.usageRecord.create({
-    data: {
-      userId,
-      videoJobId,
-      minutesUsed,
-      billingPeriod,
-    },
+  // Idempotency: avoid double-recording usage if the backend retries the completion webhook.
+  // Note: this relies on the DB unique index (video_job_id, billing_period) for race safety.
+  const existing = await prisma.usageRecord.findFirst({
+    where: { userId, videoJobId, billingPeriod },
+    select: { id: true },
   });
+  if (existing) {
+    return;
+  }
+  try {
+    await prisma.usageRecord.create({
+      data: {
+        userId,
+        videoJobId,
+        minutesUsed,
+        billingPeriod,
+      },
+    });
+  } catch (e: any) {
+    // Best-effort: if another concurrent request created it, treat as success.
+    // Prisma unique constraint violation: P2002
+    if (e?.code === "P2002") {
+      return;
+    }
+    throw e;
+  }
 
   // Deduct overage from top-up credits (rollover minutes).
   // This is a best-effort approach; we also gate job creation on remaining quota.

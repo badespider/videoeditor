@@ -25,6 +25,7 @@ from typing import List, Optional
 from pathlib import Path
 from dataclasses import dataclass
 from urllib.parse import urlparse
+from datetime import datetime, timezone
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -45,6 +46,7 @@ from app.services.copyright_protector import CopyrightProtector, ProtectedScene
 from app.services.character_extractor import CharacterExtractor
 from app.services.character_database import CharacterDatabase
 from app.services.ffmpeg_utils import run_ffmpeg_capture, FFmpegError, sanitize_ffmpeg_stderr
+from app.services.saas_webhook import notify_saas_job_update
 # VideoIndexer (sentence_transformers) is optional; import lazily when needed.
 
 
@@ -1743,6 +1745,143 @@ class PipelineWorker:
                         shutil.copy2(tts_path, final_path)
                     chapter_results.append((final_path, tts_duration))
 
+            # If user requested a target duration, validate against ACTUAL TTS durations.
+            # If we're far below the target, retry narration+TTS once with a higher word target.
+            # This fixes cases where turbo TTS speaks faster than our word-count prediction.
+            if (not used_user_script) and target_duration_minutes:
+                try:
+                    target_seconds = float(target_duration_minutes) * 60.0
+                    min_acceptable = target_seconds * 0.8  # allow 20% under
+
+                    intro_dur_now = float(intro_result[1] or 0.0)
+                    outro_dur_now = float(outro_result[1] or 0.0)
+                    chapters_dur_now = float(sum(float(d or 0.0) for _p, d in chapter_results))
+                    total_audio_now = intro_dur_now + chapters_dur_now + outro_dur_now
+
+                    if total_audio_now > 0 and total_audio_now < min_acceptable and len(chapters) > 0:
+                        short_pct = ((target_seconds - total_audio_now) / target_seconds) * 100.0
+                        print(
+                            f"⚠️ Target duration shortfall after TTS: {total_audio_now:.1f}s vs {target_seconds:.1f}s ({short_pct:.0f}% short). Retrying once...",
+                            flush=True,
+                        )
+
+                        # Estimate effective words/sec from what we just produced.
+                        words_total = sum(len((t or "").split()) for t in parsed_narrations)
+                        wps = (words_total / max(chapters_dur_now, 1.0)) if words_total > 0 else 2.8
+
+                        desired_chapters_audio = max(target_seconds - intro_dur_now - outro_dur_now, 60.0)
+                        desired_words_total = desired_chapters_audio * wps * 1.10  # +10% buffer
+                        boosted_words = int(min(520, max(160, desired_words_total / float(len(chapters)))))
+
+                        # Regenerate narration with boosted length.
+                        if structured_data and (structured_data.get("characters") or structured_data.get("scenes")):
+                            narrations = await self.script_generator.rewrite_chapters_with_structured_data(
+                                chapters=chapters,
+                                structured_data=structured_data,
+                                audio_transcript=audio_transcript,
+                                target_words_per_chapter=boosted_words,
+                                batch_size=3,
+                            )
+                        else:
+                            narrations = await self.script_generator.rewrite_chapters_parallel(
+                                chapters=chapters,
+                                character_guide=character_guide,
+                                plot_summary=plot_summary,
+                                audio_transcript=audio_transcript,
+                                target_duration_seconds=target_seconds * 1.15,
+                                batch_size=5,
+                                key_moments=key_moments,
+                            )
+
+                        narrations = self._clean_narrations(narrations)
+
+                        # Re-write script debug file to reflect the retried narrations.
+                        try:
+                            with open(script_path, "w", encoding="utf-8") as f:
+                                f.write(f"=== INTRO ===\n{intro_text}\n\n")
+                                for i, (ch, narr) in enumerate(zip(chapters, narrations)):
+                                    f.write(f"=== Chapter {i+1}: {ch.get('title', 'Untitled')} ===\n")
+                                    f.write(f"Time: {ch.get('start', '?')} - {ch.get('end', '?')}\n")
+                                    f.write(f"Original: {ch.get('description', '') or ch.get('summary', '')}\n")
+                                    f.write(f"Narration: {narr}\n\n")
+                                f.write(f"=== OUTRO ===\n{outro_text}\n\n")
+                        except Exception:
+                            pass
+
+                        # Re-parse markers (if any) and re-run TTS.
+                        parsed_narrations = []
+                        chapters_with_markers = []
+                        for i, narration in enumerate(narrations):
+                            narration_text, marker_info = parse_original_audio_marker(narration)
+                            parsed_narrations.append(narration_text)
+                            if marker_info:
+                                chapters_with_markers.append((i, marker_info))
+
+                        tts_items = []
+                        tts_items.append((intro_text, os.path.join(audio_dir, "000_intro.mp3")))
+                        for i, narration_text in enumerate(parsed_narrations):
+                            audio_path = os.path.join(audio_dir, f"chapter_{i+1:03d}_tts.mp3")
+                            tts_items.append((narration_text, audio_path))
+                        tts_items.append((outro_text, os.path.join(audio_dir, "999_outro.mp3")))
+
+                        print(
+                            f"⚡ Retrying PARALLEL TTS generation ({len(tts_items)} items) with boosted narration length...",
+                            flush=True,
+                        )
+
+                        tts_results = await self.elevenlabs.generate_speeches_parallel(
+                            items=tts_items,
+                            batch_size=5,
+                            use_turbo=True,
+                            use_timestamps=True,
+                        )
+                        intro_result = tts_results[0]
+                        chapter_tts_results = tts_results[1:-1]
+                        outro_result = tts_results[-1]
+
+                        # Rebuild chapter_results with original audio concatenation when markers exist.
+                        chapter_results = []
+                        for i, (tts_path, tts_duration) in enumerate(chapter_tts_results):
+                            marker_info = None
+                            for chapter_idx, m_info in chapters_with_markers:
+                                if chapter_idx == i:
+                                    marker_info = m_info
+                                    break
+
+                            if marker_info:
+                                try:
+                                    original_audio_path = os.path.join(audio_dir, f"chapter_{i+1:03d}_original.mp3")
+                                    self.video_editor.extract_audio_clip(
+                                        video_path=local_video,
+                                        start_time=marker_info["start"],
+                                        end_time=marker_info["end"],
+                                        output_path=original_audio_path,
+                                    )
+                                    combined_audio_path = os.path.join(audio_dir, f"chapter_{i+1:03d}.mp3")
+                                    self.audio_segmenter.concatenate_audio_files(
+                                        audio_files=[tts_path, original_audio_path],
+                                        output_path=combined_audio_path,
+                                    )
+                                    combined_duration = self.video_editor.get_media_duration(combined_audio_path)
+                                    chapter_results.append((combined_audio_path, combined_duration))
+                                except Exception:
+                                    chapter_results.append((tts_path, tts_duration))
+                            else:
+                                final_path = os.path.join(audio_dir, f"chapter_{i+1:03d}.mp3")
+                                if tts_path != final_path:
+                                    import shutil
+                                    shutil.copy2(tts_path, final_path)
+                                chapter_results.append((final_path, tts_duration))
+
+                        # Log final retry total.
+                        intro_dur_now = float(intro_result[1] or 0.0)
+                        outro_dur_now = float(outro_result[1] or 0.0)
+                        chapters_dur_now = float(sum(float(d or 0.0) for _p, d in chapter_results))
+                        total_audio_now = intro_dur_now + chapters_dur_now + outro_dur_now
+                        print(f"✅ Post-retry total audio: {total_audio_now:.1f}s (target: {target_seconds:.1f}s)", flush=True)
+                except Exception as e:
+                    print(f"⚠️ Duration retry failed (continuing with original audio): {e}", flush=True)
+
             # ==== Step 5.6: OPTIONAL Scene Matching (AI-powered clip selection) ====
             # This is an optional enhancement that can improve clip-to-narration matching
             # Can be enabled per-job via the upload form, or globally via ENABLE_SCENE_MATCHER=true in .env
@@ -2109,6 +2248,16 @@ class PipelineWorker:
             ]
             
             # Mark complete
+            # Measure source duration for billing/quota usage (count input minutes, not recap minutes).
+            # Best-effort: if ffprobe fails, omit duration_seconds (SaaS will still update status/output URL).
+            duration_seconds = None
+            try:
+                src_dur = float(self.video_editor.get_media_duration(local_video))
+                if src_dur > 0:
+                    duration_seconds = int(round(src_dur))
+            except Exception as dur_err:
+                print(f"⚠️ Could not determine source duration for billing: {dur_err}", flush=True)
+
             self.job_manager.complete_job_if_not_failed(
                 job_id=job_id,
                 progress=100,
@@ -2117,6 +2266,23 @@ class PipelineWorker:
                 output_url=output_url,
                 scenes=scene_dicts,
             )
+
+            # Notify SaaS (Next.js) so it can persist final status + record usage.
+            try:
+                await notify_saas_job_update(
+                    {
+                        "backend_job_id": job_id,
+                        "status": "completed",
+                        "progress": 100,
+                        "current_step": "Complete!",
+                        "output_url": output_url,
+                        "duration_seconds": duration_seconds,
+                        "completed_at": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
+            except Exception:
+                # Never fail the job for a SaaS notification error.
+                pass
             
             print(f"✅ Job {job_id} completed successfully (Chapter-Based)", flush=True)
             

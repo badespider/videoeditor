@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { recordUsage } from "@/lib/api/usage-service";
 
 // Webhook secret for verification (should be set in both backend and frontend)
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || "your-webhook-secret";
@@ -53,23 +54,14 @@ export async function POST(request: NextRequest) {
         ...(current_step && { currentStep: current_step }),
         ...(error_message && { errorMessage: error_message }),
         ...(output_url && { outputVideoUrl: output_url }),
-        ...(duration_seconds && { durationSeconds: duration_seconds }),
+        ...(duration_seconds != null && { durationSeconds: Number(duration_seconds) }),
         ...(completed_at && { completedAt: new Date(completed_at) }),
       },
     });
 
     // If job completed, record usage
-    if (status === "completed" && duration_seconds) {
-      const billingPeriod = new Date().toISOString().slice(0, 7); // YYYY-MM
-      
-      await prisma.usageRecord.create({
-        data: {
-          userId: job.userId,
-          videoJobId: job.id,
-          minutesUsed: duration_seconds / 60,
-          billingPeriod,
-        },
-      });
+    if (status === "completed" && duration_seconds != null) {
+      await recordUsage(job.userId, job.id, Number(duration_seconds));
     }
 
     return NextResponse.json({ success: true, job_id: updatedJob.id });

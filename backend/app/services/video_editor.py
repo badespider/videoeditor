@@ -203,6 +203,18 @@ class VideoEditorService:
         )
         os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
 
+        # Minimal diagnostics: helps debug perceived "fast-forward" or unexpected slowdowns.
+        if mode != "none":
+            try:
+                ratio = float(target_duration) / float(src_dur)
+                factor_str = "" if factor is None else f", setpts_factor={float(factor):.3f}"
+                print(
+                    f"🎞️ Align video segment: src={src_dur:.2f}s -> target={float(target_duration):.2f}s (ratio={ratio:.3f}, mode={mode}{factor_str})",
+                    flush=True,
+                )
+            except Exception:
+                pass
+
         if mode == "none":
             # No timing changes needed; re-encode for consistency.
             run_ffmpeg_capture(

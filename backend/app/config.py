@@ -234,6 +234,11 @@ class WebhookConfig(BaseModel):
     # Optional: override which header to read for webhook signature verification.
     # Example: "X-Memories-Signature"
     signature_header: str = ""
+    # SaaS (Next.js) webhook endpoint for job status updates (used for quota/usage tracking).
+    # Example: "https://app.videorecapai.com/api/webhooks/jobs"
+    saas_jobs_url: str = ""
+    # Bearer token to authenticate to the SaaS webhook. If unset, callers may fall back to WEBHOOK_SECRET.
+    saas_secret: str = ""
 
 
 class Settings(BaseSettings):
@@ -500,6 +505,11 @@ class Settings(BaseSettings):
                 set_path(("webhook", "secret"), get("WEBHOOK_SECRET"))
             if env.get("WEBHOOK_SIGNATURE_HEADER") is not None:
                 set_path(("webhook", "signature_header"), get("WEBHOOK_SIGNATURE_HEADER"))
+            # SaaS webhook (legacy vars)
+            if env.get("SAAS_WEBHOOK_URL") is not None:
+                set_path(("webhook", "saas_jobs_url"), get("SAAS_WEBHOOK_URL"))
+            if env.get("SAAS_WEBHOOK_SECRET") is not None:
+                set_path(("webhook", "saas_secret"), get("SAAS_WEBHOOK_SECRET"))
 
             return out
 

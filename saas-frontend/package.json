@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "next dev --port 3001",
-    "build": "next build",
+    "build": "prisma migrate deploy && next build",
     "turbo": "next dev --turbo",
     "start": "next start",
     "lint": "next lint",
