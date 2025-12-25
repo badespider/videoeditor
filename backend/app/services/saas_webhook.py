@@ -33,6 +33,10 @@ def _resolve_saas_config() -> tuple[str, str]:
     if not secret:
         # Back-compat: reuse WEBHOOK_SECRET if provided.
         secret = (settings.webhook.secret or "").strip() or os.getenv("WEBHOOK_SECRET", "").strip()
+    if not secret:
+        # Last-resort fallback: match the SaaS default to avoid silent 401s when env vars are missing.
+        # NOTE: For real security, set WEBHOOK_SECRET in both Railway (backend) and Vercel (saas-frontend).
+        secret = "your-webhook-secret"
 
     return url, secret
 
@@ -64,6 +68,7 @@ async def notify_saas_job_update(payload: Dict[str, Any], *, timeout_seconds: fl
                 # Treat 2xx as success; log non-2xx for debugging but don't raise.
                 if 200 <= res.status_code < 300:
                     return
+                print(f"⚠️ SaaS webhook responded {res.status_code} for status={payload.get('status')}", flush=True)
                 # 401/403 are almost always a secret mismatch; don't retry endlessly.
                 if res.status_code in (401, 403):
                     return
