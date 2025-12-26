@@ -767,6 +767,11 @@ class PipelineWorker:
     
     def run(self):
         """Main worker loop."""
+        # Print deploy metadata to verify which version is running in production.
+        commit = os.getenv("RAILWAY_GIT_COMMIT_SHA") or os.getenv("GIT_COMMIT_SHA") or ""
+        image = os.getenv("RAILWAY_DOCKER_IMAGE_NAME") or ""
+        if commit or image:
+            print(f"🔎 Worker build: commit={commit or 'unknown'} image={image or 'unknown'}", flush=True)
         print("🚀 Pipeline worker started (Chapter-Based mode)", flush=True)
         last_idle_log = 0.0
         
