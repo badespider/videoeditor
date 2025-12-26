@@ -21,7 +21,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { backend_job_id, status, progress, current_step, error_message, output_url, duration_seconds, completed_at } = body;
+    const {
+      backend_job_id,
+      status,
+      progress,
+      current_step,
+      error_message,
+      output_url,
+      duration_seconds,
+      output_duration_seconds,
+      completed_at,
+    } = body;
 
     if (!backend_job_id) {
       return NextResponse.json({ error: "Missing backend_job_id" }, { status: 400 });
@@ -46,6 +56,13 @@ export async function POST(request: NextRequest) {
     };
 
     // Update job
+    // Store the (billed) output duration as durationSeconds when available.
+    // Back-compat: backend may send duration_seconds only; newer backend may send output_duration_seconds too.
+    const billedDurationSeconds =
+      output_duration_seconds != null ? Number(output_duration_seconds) :
+      duration_seconds != null ? Number(duration_seconds) :
+      null;
+
     const updatedJob = await prisma.videoJob.update({
       where: { id: job.id },
       data: {
@@ -54,14 +71,14 @@ export async function POST(request: NextRequest) {
         ...(current_step && { currentStep: current_step }),
         ...(error_message && { errorMessage: error_message }),
         ...(output_url && { outputVideoUrl: output_url }),
-        ...(duration_seconds != null && { durationSeconds: Number(duration_seconds) }),
+        ...(billedDurationSeconds != null && { durationSeconds: billedDurationSeconds }),
         ...(completed_at && { completedAt: new Date(completed_at) }),
       },
     });
 
     // If job completed, record usage
-    if (status === "completed" && duration_seconds != null) {
-      await recordUsage(job.userId, job.id, Number(duration_seconds));
+    if (status === "completed" && billedDurationSeconds != null) {
+      await recordUsage(job.userId, job.id, billedDurationSeconds);
     }
 
     return NextResponse.json({ success: true, job_id: updatedJob.id });

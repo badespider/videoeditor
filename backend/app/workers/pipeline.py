@@ -2252,16 +2252,7 @@ class PipelineWorker:
                 for s in final_scenes
             ]
             
-            # Mark complete
-            # Measure source duration for billing/quota usage (count input minutes, not recap minutes).
-            # Best-effort: if ffprobe fails, omit duration_seconds (SaaS will still update status/output URL).
-            duration_seconds = None
-            try:
-                src_dur = float(self.video_editor.get_media_duration(local_video))
-                if src_dur > 0:
-                    duration_seconds = int(round(src_dur))
-            except Exception as dur_err:
-                print(f"⚠️ Could not determine source duration for billing: {dur_err}", flush=True)
+            # Mark complete (billing is handled via SaaS webhook; see notification block below).
 
             self.job_manager.complete_job_if_not_failed(
                 job_id=job_id,
@@ -2273,7 +2264,35 @@ class PipelineWorker:
             )
 
             # Notify SaaS (Next.js) so it can persist final status + record usage.
+            #
+            # Billing minutes should reflect the GENERATED RECAP duration (output), not the source upload length.
+            # Send both for debugging; SaaS should charge based on output_duration_seconds (or duration_seconds as fallback).
             try:
+                source_duration_seconds = None
+                try:
+                    src_dur = float(self.video_editor.get_media_duration(local_video))
+                    if src_dur > 0:
+                        source_duration_seconds = int(round(src_dur))
+                except Exception as dur_err:
+                    print(f"⚠️ Could not determine source duration: {dur_err}", flush=True)
+
+                output_duration_seconds = None
+                try:
+                    out_dur = float(self.video_editor.get_media_duration(output_path))
+                    if out_dur > 0:
+                        output_duration_seconds = int(round(out_dur))
+                except Exception as dur_err:
+                    print(f"⚠️ Could not determine output duration for billing: {dur_err}", flush=True)
+
+                # Back-compat: duration_seconds is what older SaaS deployments expect.
+                # Use output duration as the billed duration (fallback to target or omit if unknown).
+                billed_duration_seconds = output_duration_seconds
+                if billed_duration_seconds is None and target_duration_minutes:
+                    try:
+                        billed_duration_seconds = int(round(float(target_duration_minutes) * 60.0))
+                    except Exception:
+                        billed_duration_seconds = None
+
                 await notify_saas_job_update(
                     {
                         "backend_job_id": job_id,
@@ -2281,7 +2300,11 @@ class PipelineWorker:
                         "progress": 100,
                         "current_step": "Complete!",
                         "output_url": output_url,
-                        "duration_seconds": duration_seconds,
+                        # Prefer this for billing (recap length). Kept as "duration_seconds" for SaaS compatibility.
+                        "duration_seconds": billed_duration_seconds,
+                        # Debug fields (SaaS may ignore).
+                        "output_duration_seconds": output_duration_seconds,
+                        "source_duration_seconds": source_duration_seconds,
                         "completed_at": datetime.now(timezone.utc).isoformat(),
                     }
                 )
