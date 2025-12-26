@@ -124,12 +124,17 @@ export async function getCurrentUsage(userId: string): Promise<{
   const topUpMinutesRemaining = topUpAgg._sum.minutesRemaining || 0;
   const totalAvailableMinutes = minutesLimit + topUpMinutesRemaining;
 
+  const rawPercentUsed =
+    totalAvailableMinutes <= 0 ? 0 : (minutesUsed / totalAvailableMinutes) * 100;
+  const percentUsed = Math.min(100, Math.max(0, Math.round(rawPercentUsed)));
+
   return {
     minutesUsed: Math.round(minutesUsed * 100) / 100,
     minutesLimit,
     topUpMinutesRemaining,
     totalAvailableMinutes,
-    percentUsed: totalAvailableMinutes <= 0 ? 0 : Math.round((minutesUsed / totalAvailableMinutes) * 100),
+    // UI Progress expects 0-100; clamp to avoid invalid values (e.g., after overage).
+    percentUsed,
     billingPeriod,
   };
 }

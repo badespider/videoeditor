@@ -420,7 +420,7 @@ export default function JobDetailPage() {
                   src={`/api/jobs/${job.id}/download`}
                   controls
                   className="w-full h-full"
-                  poster="/placeholder-video.jpg"
+                  poster="/_static/illustrations/rocket-crashed.svg"
                 />
               </div>
             </CardContent>
