@@ -448,6 +448,8 @@ class ElevenLabsClient:
         """
         all_results = []
         total_items = len(items)
+        saw_auth_error = False
+        auth_error_detail: Optional[str] = None
         
         for batch_start in range(0, total_items, batch_size):
             batch_end = min(batch_start + batch_size, total_items)
@@ -485,6 +487,18 @@ class ElevenLabsClient:
             # Handle results
             for i, result in enumerate(batch_results):
                 if isinstance(result, Exception):
+                    # If ElevenLabs credentials are missing/invalid in production, we MUST fail the job.
+                    # Generating silent placeholder MP3s produces "successful" but ~1s videos (bad UX).
+                    try:
+                        import httpx
+                        if isinstance(result, httpx.HTTPStatusError):
+                            status = int(result.response.status_code)
+                            if status in (401, 403):
+                                saw_auth_error = True
+                                auth_error_detail = str(result)
+                    except Exception:
+                        pass
+
                     print(f"⚠️ TTS {batch_start + i + 1} failed: {result}", flush=True)
                     text, output_path = batch[i]
                     # Ensure placeholder file exists so later pipeline steps don't crash.
@@ -501,6 +515,15 @@ class ElevenLabsClient:
             if batch_end < total_items:
                 await asyncio.sleep(1)
         
+        # Hard stop on auth errors: prevents "completed" jobs with unusable 1-second output.
+        if saw_auth_error:
+            raise RuntimeError(
+                "ElevenLabs TTS authorization failed (401/403). "
+                "Set a valid ELEVENLABS_API_KEY (and optionally ELEVENLABS_VOICE_ID) "
+                "in the Railway WORKER environment. "
+                f"Original error: {auth_error_detail or 'unknown'}"
+            )
+
         print(f"⚡ Generated {len(all_results)} audio files in parallel mode", flush=True)
         return all_results
     

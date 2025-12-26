@@ -63,6 +63,9 @@ class CopyrightProtector:
         audio_duration: float,
         scene_id: int,
         alternates: Optional[object] = None,
+        # The pipeline may pass extra metadata args depending on build.
+        # Accept and ignore to stay backwards-compatible.
+        **_ignored: object,
     ) -> ProtectedScene:
         """
         Backwards-compatible async API expected by the pipeline.
