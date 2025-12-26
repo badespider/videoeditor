@@ -34,8 +34,97 @@ export async function GET(request: NextRequest) {
       take: 50,
     });
 
+    // Sync a small number of non-terminal jobs with backend so the list doesn't get "stuck" for hours
+    // (the job detail page already syncs, but many users only look at the list).
+    const jobsToSync = jobs
+      .filter(
+        (j) =>
+          !!j.backendJobId &&
+          (j.status === "PENDING" ||
+            j.status === "PROCESSING" ||
+            (j.status === "COMPLETED" && !j.outputVideoUrl)),
+      )
+      .slice(0, 10);
+
+    if (jobsToSync.length > 0) {
+      await Promise.all(
+        jobsToSync.map(async (job) => {
+          try {
+            const backendResponse = await fetch(`${API_URL}/api/jobs/${job.backendJobId}`);
+            if (!backendResponse.ok) return;
+            const backendData = await backendResponse.json();
+
+            // Backend `/api/jobs/:id` returns JobProgress but not output_url; fetch /result when completed.
+            let outputUrlFromResult: string | null = null;
+            if (backendData.status === "completed") {
+              try {
+                const resultRes = await fetch(`${API_URL}/api/jobs/${job.backendJobId}/result`);
+                if (resultRes.ok) {
+                  const resultData = await resultRes.json();
+                  outputUrlFromResult = resultData.output_url || null;
+                }
+              } catch {
+                // ignore
+              }
+            }
+
+            const statusMap: Record<
+              string,
+              "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED"
+            > = {
+              pending: "PENDING",
+              processing: "PROCESSING",
+              completed: "COMPLETED",
+              failed: "FAILED",
+              cancelled: "CANCELLED",
+            };
+
+            const newStatus = statusMap[backendData.status] || job.status;
+            const mergedOutputUrl =
+              outputUrlFromResult || backendData.output_url || job.outputVideoUrl;
+
+            const shouldUpdate =
+              newStatus !== job.status ||
+              backendData.progress !== job.progress ||
+              backendData.current_step !== job.currentStep ||
+              backendData.error_message !== job.errorMessage ||
+              (newStatus === "COMPLETED" &&
+                !!mergedOutputUrl &&
+                mergedOutputUrl !== job.outputVideoUrl);
+
+            if (!shouldUpdate) return;
+
+            await prisma.videoJob.update({
+              where: { id: job.id },
+              data: {
+                status: newStatus,
+                progress: backendData.progress ?? job.progress,
+                currentStep: backendData.current_step ?? job.currentStep,
+                errorMessage: backendData.error_message ?? job.errorMessage,
+                outputVideoUrl: mergedOutputUrl,
+                durationSeconds: backendData.duration_seconds ?? job.durationSeconds,
+                completedAt: backendData.completed_at ? new Date(backendData.completed_at) : job.completedAt,
+              },
+            });
+          } catch {
+            // ignore sync failures; we'll still return local DB state
+          }
+        }),
+      );
+    }
+
+    // Re-read after sync so UI reflects any updates.
+    const freshJobs =
+      jobsToSync.length > 0
+        ? await prisma.videoJob.findMany({
+            where: { userId: session.user.id },
+            orderBy: { createdAt: "desc" },
+            take: 50,
+          })
+        : jobs;
+
     // Transform to expected format
-    const formattedJobs = jobs.map((job) => ({
+    const formattedJobs = freshJobs.map((job) => ({
       id: job.id,
       title: job.title,
       status: job.status,
@@ -50,7 +139,7 @@ export async function GET(request: NextRequest) {
       completedAt: job.completedAt?.toISOString() || null,
     }));
 
-    return NextResponse.json({ jobs: formattedJobs, total: jobs.length });
+    return NextResponse.json({ jobs: formattedJobs, total: freshJobs.length });
   } catch (error) {
     console.error("Failed to fetch jobs:", error);
     return NextResponse.json(
